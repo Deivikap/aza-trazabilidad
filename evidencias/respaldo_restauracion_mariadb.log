@@ -1,0 +1,14 @@
+[1] Respaldo de aza_trazabilidad (single-transaction, triggers y rutinas) cifrado con AES-256-CBC + PBKDF2
+459e7376bd59e0b8d4b57ca81582ac41c0da263dc2ae3fd5afd0027e9d530333  aza.tar.enc
+tamano_bytes 256032
+[2] Verificación: el archivo cifrado NO contiene texto SQL legible
+OK: con clave incorrecta no se puede abrir
+[3] Restauración en aza_restore_prueba
+[4] Comparación de integridad origen vs restaurado
+OK    trazabilidad_inspeccion filas=5486 checksum=4078613420
+OK    trazabilidad_eventoauditoria filas=5457 checksum=96231811
+OK    trazabilidad_alarma filas=2 checksum=3054874047
+OK    trazabilidad_batch filas=4 checksum=4215927921
+OK    trazabilidad_receta filas=3 checksum=4259687127
+Triggers en la base restaurada: 4 (esperado 4)
+Ciclo de respaldo y restauración verificado.
