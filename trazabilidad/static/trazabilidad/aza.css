@@ -6,3 +6,5 @@
 .estado-RECHAZADO{background:#fdecea;border:1px solid #c62828;color:#b71c1c}
 .estado-SIN_RECETA{background:#fff8e1;border:1px solid #f9a825;color:#7a5800}
 .kpi{font-size:2.2rem;font-weight:700;color:var(--aza)}
+a:not(.btn){color:#0a58ca}
+.btn-outline-secondary{--bs-btn-color:#495057;--bs-btn-border-color:#495057}

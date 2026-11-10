@@ -1,0 +1,9 @@
+# Primera ejecución de tools/accesibilidad_axe.py (10/11/2026), antes de las correcciones
+login         aprobadas= 13 violaciones=0 
+dashboard     aprobadas= 14 violaciones=0 
+historial     aprobadas= 15 violaciones=3 color-contrast(serious,1), label(critical,4), select-name(critical,2)
+detalle       aprobadas= 17 violaciones=1 color-contrast(serious,1)
+trazabilidad  aprobadas= 13 violaciones=0 
+alarmas       aprobadas= 14 violaciones=1 color-contrast(serious,1)
+usuarios      aprobadas= 18 violaciones=0 
+auditoria     aprobadas= 16 violaciones=2 label(critical,2), select-name(critical,1)

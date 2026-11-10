@@ -1,0 +1,42 @@
+[
+ {
+  "pagina": "login",
+  "reglas_aprobadas": 13,
+  "violaciones": []
+ },
+ {
+  "pagina": "dashboard",
+  "reglas_aprobadas": 14,
+  "violaciones": []
+ },
+ {
+  "pagina": "historial",
+  "reglas_aprobadas": 18,
+  "violaciones": []
+ },
+ {
+  "pagina": "detalle",
+  "reglas_aprobadas": 17,
+  "violaciones": []
+ },
+ {
+  "pagina": "trazabilidad",
+  "reglas_aprobadas": 13,
+  "violaciones": []
+ },
+ {
+  "pagina": "alarmas",
+  "reglas_aprobadas": 14,
+  "violaciones": []
+ },
+ {
+  "pagina": "usuarios",
+  "reglas_aprobadas": 18,
+  "violaciones": []
+ },
+ {
+  "pagina": "auditoria",
+  "reglas_aprobadas": 22,
+  "violaciones": []
+ }
+]

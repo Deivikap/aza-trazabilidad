@@ -2,12 +2,12 @@
 <div class="d-flex justify-content-between align-items-center mb-3"><h1 class="h4 mb-0">Historial de inspecciones</h1>
 {% if es_supervisor %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'exportar_csv' %}?{{ qs }}">Exportar CSV</a>{% endif %}</div>
 <form class="row g-2 mb-3 bg-white p-3 border rounded" method="get">
-<div class="col-md-2"><label class="form-label small">Desde</label><input type="date" class="form-control" name="desde" value="{{ g.desde }}"></div>
-<div class="col-md-2"><label class="form-label small">Hasta</label><input type="date" class="form-control" name="hasta" value="{{ g.hasta }}"></div>
-<div class="col-md-2"><label class="form-label small">Receta</label><select class="form-select" name="receta"><option value="">Todas</option>{% for r in recetas %}<option value="{{ r.codigo }}" {% if g.receta == r.codigo %}selected{% endif %}>{{ r.codigo }}</option>{% endfor %}</select></div>
-<div class="col-md-2"><label class="form-label small">Lote</label><input class="form-control" name="lote" value="{{ g.lote }}"></div>
-<div class="col-md-2"><label class="form-label small">Batch</label><input class="form-control" name="batch" value="{{ g.batch }}"></div>
-<div class="col-md-2"><label class="form-label small">Estado</label><select class="form-select" name="estado"><option value="">Todos</option><option value="APROBADO" {% if g.estado == 'APROBADO' %}selected{% endif %}>Aprobado</option><option value="RECHAZADO" {% if g.estado == 'RECHAZADO' %}selected{% endif %}>Rechazado</option><option value="SIN_RECETA" {% if g.estado == 'SIN_RECETA' %}selected{% endif %}>Sin receta</option></select></div>
+<div class="col-md-2"><label class="form-label small" for="f_desde">Desde</label><input id="f_desde"  type="date" class="form-control" name="desde" value="{{ g.desde }}"></div>
+<div class="col-md-2"><label class="form-label small" for="f_hasta">Hasta</label><input id="f_hasta"  type="date" class="form-control" name="hasta" value="{{ g.hasta }}"></div>
+<div class="col-md-2"><label class="form-label small" for="f_receta">Receta</label><select id="f_receta"  class="form-select" name="receta"><option value="">Todas</option>{% for r in recetas %}<option value="{{ r.codigo }}" {% if g.receta == r.codigo %}selected{% endif %}>{{ r.codigo }}</option>{% endfor %}</select></div>
+<div class="col-md-2"><label class="form-label small" for="f_lote">Lote</label><input id="f_lote"  class="form-control" name="lote" value="{{ g.lote }}"></div>
+<div class="col-md-2"><label class="form-label small" for="f_batch">Batch</label><input id="f_batch"  class="form-control" name="batch" value="{{ g.batch }}"></div>
+<div class="col-md-2"><label class="form-label small" for="f_estado">Estado</label><select id="f_estado"  class="form-select" name="estado"><option value="">Todos</option><option value="APROBADO" {% if g.estado == 'APROBADO' %}selected{% endif %}>Aprobado</option><option value="RECHAZADO" {% if g.estado == 'RECHAZADO' %}selected{% endif %}>Rechazado</option><option value="SIN_RECETA" {% if g.estado == 'SIN_RECETA' %}selected{% endif %}>Sin receta</option></select></div>
 <div class="col-12"><button class="btn btn-aza btn-sm">Filtrar</button> <a class="btn btn-link btn-sm" href="{% url 'historial' %}">Limpiar</a></div></form>
 <div class="table-responsive"><table class="table table-hover bg-white"><thead><tr><th>ID externo</th><th>Fecha y hora</th><th>Lote</th><th>Batch</th><th>Receta</th><th>Ángulo</th><th>Estado original</th><th></th></tr></thead><tbody>
 {% for i in pagina %}<tr><td>{{ i.id_externo }}</td><td>{{ i.fecha_hora|date:"d/m/Y H:i:s" }}</td><td>{{ i.batch.lote.codigo }}</td><td>{{ i.batch.codigo }}</td><td>{{ i.batch.receta.codigo|default:"—" }}</td><td>{{ i.medicion_angular }}</td>

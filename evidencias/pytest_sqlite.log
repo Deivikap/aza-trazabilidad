@@ -97,4 +97,4 @@ trazabilidad/tests/test_web.py::test_receta_min_menor_que_max PASSED     [ 98%]
 trazabilidad/tests/test_ev3.py::test_concurrencia_mismo_id_externo_un_solo_201 SKIPPED [100%]
 
 - generated xml file: /tmp/claude-0/-home-claude/c5086df9-1a2b-57c1-8b39-7058549b5a79/scratchpad/app/evidencias/pytest_sqlite.xml -
-======================== 88 passed, 1 skipped in 3.29s =========================
+======================== 88 passed, 1 skipped in 3.55s =========================
