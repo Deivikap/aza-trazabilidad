@@ -1,0 +1,8 @@
+:root{--aza:#d40202}
+.navbar-aza{background:#fff;border-bottom:3px solid var(--aza)}
+.brand{color:var(--aza);font-weight:700}
+.btn-aza{background:var(--aza);color:#fff}.btn-aza:hover{background:#a80101;color:#fff}
+.estado-APROBADO{background:#e8f5e9;border:1px solid #2e7d32;color:#1b5e20}
+.estado-RECHAZADO{background:#fdecea;border:1px solid #c62828;color:#b71c1c}
+.estado-SIN_RECETA{background:#fff8e1;border:1px solid #f9a825;color:#7a5800}
+.kpi{font-size:2.2rem;font-weight:700;color:var(--aza)}
