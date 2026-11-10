@@ -1,5 +1,6 @@
 import csv
 from collections import defaultdict
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django.contrib import messages
@@ -51,13 +52,25 @@ def dashboard(request):  # CU07 + CU07a
     return render(request, "trazabilidad/dashboard.html", ctx)
 
 
+def _inicio_dia(texto):
+    """'YYYY-MM-DD' -> medianoche local (aware). ValueError si no es una fecha real."""
+    d = datetime.strptime(texto, "%Y-%m-%d").date()
+    return timezone.make_aware(datetime.combine(d, time.min))
+
+
+def _rango_fechas(qs, g, campo):
+    """Filtra por día local con un rango [desde, hasta+1d) en vez de __date: no depende de las tablas
+    de zonas horarias de MariaDB (CONVERT_TZ devuelve NULL si no están cargadas) y aprovecha el índice."""
+    if g.get("desde"):
+        qs = qs.filter(**{f"{campo}__gte": _inicio_dia(g["desde"])})
+    if g.get("hasta"):
+        qs = qs.filter(**{f"{campo}__lt": _inicio_dia(g["hasta"]) + timedelta(days=1)})
+    return qs
+
+
 def _filtrar(request):
     g = request.GET
-    qs = Inspeccion.objects.select_related("batch__lote", "batch__receta")
-    if g.get("desde"):
-        qs = qs.filter(fecha_hora__date__gte=g["desde"])
-    if g.get("hasta"):
-        qs = qs.filter(fecha_hora__date__lte=g["hasta"])
+    qs = _rango_fechas(Inspeccion.objects.select_related("batch__lote", "batch__receta"), g, "fecha_hora")
     if g.get("receta"):
         qs = qs.filter(batch__receta__codigo=g["receta"])
     if g.get("lote"):
@@ -88,8 +101,11 @@ def _celda(v):
 
 @role_required(SUPERVISOR)
 def exportar_csv(request):  # CU13
-    qs = _filtrar(request)[: settings.EXPORT_MAX_FILAS + 1]
-    filas = list(qs)
+    try:
+        filas = list(_filtrar(request)[: settings.EXPORT_MAX_FILAS + 1])
+    except ValueError:
+        messages.error(request, "Fechas inválidas: usa el formato AAAA-MM-DD.")
+        return redirect("historial")
     if len(filas) > settings.EXPORT_MAX_FILAS:
         messages.error(request, f"Más de {settings.EXPORT_MAX_FILAS} filas: acota los filtros.")
         return redirect("historial")
@@ -233,8 +249,11 @@ def recetas(request, pk=None):  # CU09
 def auditoria(request):  # CU12
     g = request.GET
     qs = EventoAuditoria.objects.select_related("usuario")
-    if g.get("desde"): qs = qs.filter(fecha_hora__date__gte=g["desde"])
-    if g.get("hasta"): qs = qs.filter(fecha_hora__date__lte=g["hasta"])
+    try:
+        qs = _rango_fechas(qs, g, "fecha_hora")
+    except ValueError:
+        messages.error(request, "Fechas inválidas: usa el formato AAAA-MM-DD.")
+        qs = qs.none()
     if g.get("accion"): qs = qs.filter(accion__icontains=g["accion"])
     if g.get("resultado") in ("EXITO", "FALLO"): qs = qs.filter(resultado=g["resultado"])
     if g.get("usuario"): qs = qs.filter(usuario__username__icontains=g["usuario"])
