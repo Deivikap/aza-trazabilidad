@@ -1,0 +1,65 @@
+# Producción en una VM: solo Caddy (80/443) está expuesto. MariaDB y MongoDB viven en una red interna sin salida a Internet.
+name: aza
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    environment: [DOMAIN]
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    depends_on: [web]
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env.prod
+    environment:
+      DB_ENGINE: mysql
+      DB_HOST: mariadb
+      DB_NAME: aza_trazabilidad
+      DB_USER: aza_app
+      MONGO_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/?authSource=admin
+      DJANGO_DEBUG: "0"
+      TRUST_PROXY: "1"
+    depends_on:
+      mariadb: {condition: service_healthy}
+      mongo: {condition: service_healthy}
+    networks: [edge, data]
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: aza_trazabilidad
+      MARIADB_USER: aza_app
+      MARIADB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en .env.prod}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?define DB_ROOT_PASSWORD en .env.prod}
+    volumes: [mariadb_data:/var/lib/mysql]
+    healthcheck: {test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"], interval: 10s, retries: 20}
+    networks: [data]
+
+  mongo:
+    image: mongo:7.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?define MONGO_USER en .env.prod}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?define MONGO_PASSWORD en .env.prod}
+    volumes: [mongo_data:/data/db]
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "-u", "${MONGO_USER}", "-p", "${MONGO_PASSWORD}", "--authenticationDatabase", "admin", "--eval", "db.runCommand({ping:1})"]
+      interval: 10s
+      retries: 20
+    networks: [data]
+
+networks:
+  edge: {}
+  data: {internal: true}   # sin acceso desde/hacia Internet: las BD nunca quedan expuestas
+volumes: {mariadb_data: {}, mongo_data: {}, caddy_data: {}, caddy_config: {}}

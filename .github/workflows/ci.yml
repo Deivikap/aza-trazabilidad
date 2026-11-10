@@ -1,0 +1,27 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  pruebas:
+    runs-on: ubuntu-24.04
+    services:
+      mariadb:
+        image: mariadb:11.4
+        env: {MARIADB_ROOT_PASSWORD: root, MARIADB_DATABASE: aza_trazabilidad}
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval=5s --health-retries=20
+    env:
+      DB_ENGINE: mysql
+      DB_HOST: 127.0.0.1
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: aza_trazabilidad
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: sudo apt-get update && sudo apt-get install -y libmariadb-dev pkg-config gcc
+      - run: pip install -r requirements-dev.txt bandit pip-audit pytest-cov
+      - run: pytest -v --cov=trazabilidad
+      - run: bandit -r trazabilidad aza -x trazabilidad/tests
+      - run: pip-audit -r requirements.txt
