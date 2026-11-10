@@ -116,6 +116,7 @@ trazabilidad/management/commands/seed_demo.py               65     65     0%
 trazabilidad/middleware.py                                  10      0   100%
 trazabilidad/migrations/0001_initial.py                      7      0   100%
 trazabilidad/migrations/0002_triggers_inmutabilidad.py      23      5    78%
+trazabilidad/migrations/0003_indices_historial.py           11      3    73%
 trazabilidad/migrations/__init__.py                          0      0   100%
 trazabilidad/models.py                                     105      2    98%
 trazabilidad/mongo.py                                       22      2    91%
@@ -134,5 +135,5 @@ trazabilidad/views.py                                      214      7    97%
 trazabilidad/views_errores.py                                3      0   100%
 trazabilidad/views_password.py                              33      0   100%
 ----------------------------------------------------------------------------
-TOTAL                                                     1284     92    93%
-============================== 89 passed in 7.98s ==============================
+TOTAL                                                     1295     95    93%
+============================== 89 passed in 8.70s ==============================

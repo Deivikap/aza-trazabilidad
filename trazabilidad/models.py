@@ -53,13 +53,17 @@ class Inspeccion(models.Model):
     batch = models.ForeignKey(Batch, on_delete=models.PROTECT, related_name="inspecciones")
     fecha_hora = models.DateTimeField()
     medicion_angular = models.DecimalField(max_digits=6, decimal_places=3)
-    estado_original = models.CharField(max_length=12, choices=ESTADOS, db_index=True)
+    estado_original = models.CharField(max_length=12, choices=ESTADOS)
     fecha_recepcion = models.DateTimeField(auto_now_add=True)
     limite_min = models.DecimalField(max_digits=6, decimal_places=3, null=True, blank=True)  # snapshot (RF-25)
     limite_max = models.DecimalField(max_digits=6, decimal_places=3, null=True, blank=True)
 
     class Meta:
-        indexes = [models.Index(fields=["batch", "-fecha_hora"], name="idx_insp_batch_fecha")]
+        indexes = [
+            models.Index(fields=["batch", "-fecha_hora"], name="idx_insp_batch_fecha"),      # trazabilidad por batch (CU05)
+            models.Index(fields=["fecha_hora"], name="idx_insp_fecha"),                    # historial por rango de fechas (CU06)
+            models.Index(fields=["estado_original", "fecha_hora"], name="idx_insp_estado_fecha"),  # filtro por estado + fechas
+        ]
         ordering = ["-fecha_hora"]
 
     def save(self, *args, **kwargs):

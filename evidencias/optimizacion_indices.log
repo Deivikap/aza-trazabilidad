@@ -1,0 +1,10 @@
+### ANTES (migraciones 0001-0002)  (filas: 300010)
+Q1     57.06 ms   tipo=ALL indice=NULL filas_estimadas=298751 extra=Using where; Using filesort
+Q2     39.90 ms   tipo=range indice=trazabilidad_inspeccion_estado_original_722b7ef8 filas_estimadas=71796 extra=Using index condition; Using where; Using filesort
+Q3     39.30 ms   tipo=index indice=idx_insp_batch_fecha filas_estimadas=298751 extra=Using where; Using index
+Q4      0.71 ms   tipo=ref indice=idx_insp_batch_fecha filas_estimadas=149375 extra=Using where; Using index
+### DESPUÉS (migración 0003: idx_insp_fecha e idx_insp_estado_fecha)  (filas: 300010)
+Q1      0.37 ms   tipo=range indice=idx_insp_fecha filas_estimadas=24544 extra=Using where
+Q2      0.31 ms   tipo=range indice=idx_insp_estado_fecha filas_estimadas=1452 extra=Using where; Using index
+Q3      2.11 ms   tipo=range indice=idx_insp_fecha filas_estimadas=24544 extra=Using where; Using index
+Q4      0.23 ms   tipo=ref indice=idx_insp_batch_fecha filas_estimadas=149333 extra=Using where; Using index
