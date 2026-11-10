@@ -1,0 +1,17 @@
+{% extends "trazabilidad/base.html" %}{% block content %}
+<a href="{% url 'historial' %}" class="small">← Volver al historial</a>
+<h1 class="h4 my-3">Inspección {{ i.id_externo }}</h1>
+<div class="row g-3"><div class="col-md-6"><div class="card"><div class="card-body"><dl class="row mb-0">
+<dt class="col-5">Fecha y hora</dt><dd class="col-7">{{ i.fecha_hora|date:"d/m/Y H:i:s.u" }}</dd>
+<dt class="col-5">Medición angular</dt><dd class="col-7">{{ i.medicion_angular }}°</dd>
+<dt class="col-5">Lote / Batch</dt><dd class="col-7">{{ i.batch.lote.codigo }} / {{ i.batch.codigo }}</dd>
+<dt class="col-5">Receta</dt><dd class="col-7">{{ i.batch.receta.codigo|default:"— sin receta —" }}</dd>
+<dt class="col-5">Límites usados</dt><dd class="col-7">{% if i.limite_min is not None %}{{ i.limite_min }}° a {{ i.limite_max }}°{% else %}—{% endif %}</dd>
+</dl></div></div></div>
+<div class="col-md-6"><div class="card"><div class="card-body"><div class="small text-muted mb-1">Clasificación original · solo lectura · fuente: cámara de trefilado</div>
+<div class="p-3 rounded estado-{{ i.estado_original }} fs-5">🔒 {{ i.get_estado_original_display }}</div>
+<p class="small text-muted mt-2 mb-0">La plataforma nunca recalcula este valor, aunque la receta cambie después.</p></div></div></div></div>
+<h2 class="h6 mt-4">Observaciones operativas</h2>
+<ul class="list-group mb-3">{% for o in observaciones %}<li class="list-group-item"><div class="small text-muted">{{ o.usuario.username }} · {{ o.fecha_hora|date:"d/m/Y H:i" }}</div>{{ o.contenido }}</li>{% empty %}<li class="list-group-item text-muted">Sin observaciones.</li>{% endfor %}</ul>
+{% if es_operador or es_supervisor %}<form method="post" class="bg-white p-3 border rounded">{% csrf_token %}{{ form.as_p }}<button class="btn btn-aza btn-sm">Registrar observación</button></form>{% endif %}
+{% endblock %}

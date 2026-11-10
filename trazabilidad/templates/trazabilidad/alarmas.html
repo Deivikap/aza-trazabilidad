@@ -1,0 +1,8 @@
+{% extends "trazabilidad/base.html" %}{% block content %}
+<h1 class="h4 mb-3">Alarmas</h1>
+<div class="mb-3"><a class="btn btn-sm {% if estado == 'ABIERTA' %}btn-aza{% else %}btn-outline-secondary{% endif %}" href="?estado=ABIERTA">Abiertas</a> <a class="btn btn-sm {% if estado == 'RECONOCIDA' %}btn-aza{% else %}btn-outline-secondary{% endif %}" href="?estado=RECONOCIDA">Reconocidas</a></div>
+<table class="table bg-white"><thead><tr><th>Fecha</th><th>Tipo</th><th>Inspección</th><th>Batch</th><th>Estado</th><th></th></tr></thead><tbody>
+{% for a in alarmas %}<tr><td>{{ a.fecha_hora|date:"d/m/Y H:i" }}</td><td>{{ a.get_tipo_display }}</td><td><a href="{% url 'detalle' a.inspeccion.pk %}">{{ a.inspeccion.id_externo }}</a></td><td>{{ a.inspeccion.batch.codigo }}</td>
+<td>{{ a.get_estado_display }}{% if a.usuario_rec %} <span class="small text-muted">({{ a.usuario_rec.username }})</span>{% endif %}</td>
+<td>{% if a.estado == 'ABIERTA' %}<form method="post" action="{% url 'reconocer' a.pk %}">{% csrf_token %}<button class="btn btn-sm btn-aza">Reconocer</button></form>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="6" class="text-muted text-center">No hay alarmas {{ estado|lower }}s.</td></tr>{% endfor %}</tbody></table>{% endblock %}

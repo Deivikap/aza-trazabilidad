@@ -1,0 +1,6 @@
+{% extends "trazabilidad/base.html" %}{% block content %}
+<h1 class="h4 mb-3">Recetas y parámetros de referencia</h1>
+<div class="alert alert-info small">🔒 Cambiar una tolerancia solo afecta a inspecciones futuras: las ya recibidas conservan su clasificación y los límites con que se evaluaron.</div>
+<div class="row g-3"><div class="col-lg-7"><table class="table bg-white"><thead><tr><th>Código</th><th>Nombre</th><th>Tolerancia</th><th>Activa</th><th></th></tr></thead><tbody>
+{% for r in lista %}<tr><td>{{ r.codigo }}</td><td>{{ r.nombre }}</td><td>{{ r.tol_angular_min }}° a {{ r.tol_angular_max }}°</td><td>{{ r.activa|yesno:"Sí,No" }}</td><td><a href="{% url 'receta_editar' r.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a></td></tr>{% endfor %}</tbody></table></div>
+<div class="col-lg-5"><div class="card"><div class="card-header">{% if editando %}Editar {{ editando.codigo }}{% else %}Nueva receta{% endif %}</div><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}{% if form.non_field_errors %}<div class="text-danger">{{ form.non_field_errors }}</div>{% endif %}<button class="btn btn-aza btn-sm">Guardar</button></form></div></div></div></div>{% endblock %}

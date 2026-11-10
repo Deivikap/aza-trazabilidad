@@ -1,0 +1,6 @@
+{% extends "trazabilidad/base.html" %}{% block content %}
+<h1 class="h4 mb-3">Lotes y batches</h1>
+<div class="row g-3 mb-4"><div class="col-md-6"><div class="card"><div class="card-header">Nuevo lote</div><div class="card-body"><form method="post">{% csrf_token %}{{ fl.as_p }}<button name="guardar_lote" class="btn btn-aza btn-sm">Guardar lote</button></form></div></div></div>
+<div class="col-md-6"><div class="card"><div class="card-header">Nuevo batch</div><div class="card-body"><form method="post">{% csrf_token %}{{ fb.as_p }}<button name="guardar_batch" class="btn btn-aza btn-sm">Guardar batch</button></form></div></div></div></div>
+<table class="table bg-white"><thead><tr><th>Lote</th><th>Estado</th><th>Batches (receta)</th></tr></thead><tbody>
+{% for l in lotes %}<tr><td>{{ l.codigo }}</td><td>{{ l.get_estado_display }}</td><td>{% for b in l.batches.all %}{{ b.codigo }} ({{ b.receta.codigo|default:"sin receta" }}){% if not forloop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody></table>{% endblock %}
