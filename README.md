@@ -54,8 +54,8 @@ Muestra 201, 409 (duplicado), 422 (incompleto) y 401 (token inválido).
 
 ## Pruebas
 ```bash
-pytest -v                                                  # 87 pruebas (SQLite + mongomock; 1 se omite: requiere MariaDB)
-DB_ENGINE=mysql DB_USER=... DB_PASSWORD=... pytest -v      # contra MariaDB real: 87 pruebas pasan
+pytest -v                                                  # 89 pruebas (SQLite + mongomock; 1 se omite: requiere MariaDB)
+DB_ENGINE=mysql DB_USER=... DB_PASSWORD=... pytest -v      # contra MariaDB real: 89 pruebas pasan
 pytest --cov=trazabilidad --cov-report=term                # cobertura (93 % en la última ejecución)
 ```
 Detalle, carga (Locust), Bandit, pip-audit y respaldo en `docs/PRUEBAS.md`; resultados en `evidencias/`.

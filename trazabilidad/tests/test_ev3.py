@@ -150,3 +150,25 @@ def test_concurrencia_mismo_id_externo_un_solo_201(triggers_restaurados, quitar_
     assert sorted(codigos) == [201] + [409] * 7
     assert Inspeccion.objects.filter(id_externo="CONC-1").count() == 1
     assert mongo.obtener("CONC-1") is not None
+
+
+def test_rnf01_sesion_expira_a_los_30_minutos_de_inactividad(cliente_rol, datos, settings):
+    from datetime import timedelta
+    from django.test import Client
+    from django.utils import timezone
+    from django.contrib.sessions.models import Session
+    from django.urls import reverse
+    c = cliente_rol("Operador")
+    assert settings.SESSION_COOKIE_AGE == 1800 and settings.SESSION_SAVE_EVERY_REQUEST is True
+    assert c.get(reverse("dashboard")).status_code == 200
+    s = Session.objects.get()
+    assert timedelta(minutes=29) < s.expire_date - timezone.now() <= timedelta(minutes=30)
+    Session.objects.update(expire_date=timezone.now() - timedelta(seconds=1))  # simula 30 min sin actividad
+    r = c.get(reverse("dashboard"))
+    assert r.status_code == 302 and "/login/" in r["Location"]
+
+
+def test_rnf11_errores_no_exponen_trazas_ni_rutas(client, db):
+    r = client.get("/ruta-que-no-existe/")
+    cuerpo = r.content.decode()
+    assert r.status_code == 404 and "Traceback" not in cuerpo and "/home/" not in cuerpo and "settings.py" not in cuerpo

@@ -1,0 +1,12 @@
+escritorio_1920 dashboard: desborde horizontal = False
+escritorio_1920 historial: desborde horizontal = False
+escritorio_1920 alarmas: desborde horizontal = False
+escritorio_1920 trazabilidad: desborde horizontal = False
+tablet_768 dashboard: desborde horizontal = False
+tablet_768 historial: desborde horizontal = False
+tablet_768 alarmas: desborde horizontal = False
+tablet_768 trazabilidad: desborde horizontal = False
+movil_390 dashboard: desborde horizontal = False
+movil_390 historial: desborde horizontal = False
+movil_390 alarmas: desborde horizontal = False
+movil_390 trazabilidad: desborde horizontal = False

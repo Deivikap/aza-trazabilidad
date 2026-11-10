@@ -10,10 +10,11 @@ tar -C "$TMP" -cf - mariadb.sql.gz | openssl enc -aes-256-cbc -pbkdf2 -iter 2000
 sha256sum "$TMP/aza.tar.enc" | sed "s#$TMP/##"; ls -l "$TMP/aza.tar.enc" | awk '{print "tamano_bytes",$5}'
 echo "[2] Verificación: el archivo cifrado NO contiene texto SQL legible"
 if openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass "pass:clave-incorrecta" -in "$TMP/aza.tar.enc" 2>/dev/null | tar -tf - >/dev/null 2>&1; then echo "FALLA: abrió con clave incorrecta"; exit 1; else echo "OK: con clave incorrecta no se puede abrir"; fi
-echo "[3] Restauración en $DST"
+echo "[3] Restauración en $DST"; T0=$(date +%s.%N)
 $M -e "DROP DATABASE IF EXISTS $DST; CREATE DATABASE $DST CHARACTER SET utf8mb4"
 openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass "pass:$PASS_BK" -in "$TMP/aza.tar.enc" | tar -C "$TMP" -xf -
 gunzip -c "$TMP/mariadb.sql.gz" | $M "$DST"
+T1=$(date +%s.%N); printf "Tiempo de restauración (RTO medido): %.1f s\n" "$(echo "$T1 - $T0" | bc -l)"
 echo "[4] Comparación de integridad origen vs restaurado"
 for t in trazabilidad_inspeccion trazabilidad_eventoauditoria trazabilidad_alarma trazabilidad_batch trazabilidad_receta; do
   a=$($M -N -e "SELECT COUNT(*) FROM $SRC.$t"); b=$($M -N -e "SELECT COUNT(*) FROM $DST.$t")

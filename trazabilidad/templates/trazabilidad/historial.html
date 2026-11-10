@@ -9,9 +9,9 @@
 <div class="col-md-2"><label class="form-label small">Batch</label><input class="form-control" name="batch" value="{{ g.batch }}"></div>
 <div class="col-md-2"><label class="form-label small">Estado</label><select class="form-select" name="estado"><option value="">Todos</option><option value="APROBADO" {% if g.estado == 'APROBADO' %}selected{% endif %}>Aprobado</option><option value="RECHAZADO" {% if g.estado == 'RECHAZADO' %}selected{% endif %}>Rechazado</option><option value="SIN_RECETA" {% if g.estado == 'SIN_RECETA' %}selected{% endif %}>Sin receta</option></select></div>
 <div class="col-12"><button class="btn btn-aza btn-sm">Filtrar</button> <a class="btn btn-link btn-sm" href="{% url 'historial' %}">Limpiar</a></div></form>
-<table class="table table-hover bg-white"><thead><tr><th>ID externo</th><th>Fecha y hora</th><th>Lote</th><th>Batch</th><th>Receta</th><th>Ángulo</th><th>Estado original</th><th></th></tr></thead><tbody>
+<div class="table-responsive"><table class="table table-hover bg-white"><thead><tr><th>ID externo</th><th>Fecha y hora</th><th>Lote</th><th>Batch</th><th>Receta</th><th>Ángulo</th><th>Estado original</th><th></th></tr></thead><tbody>
 {% for i in pagina %}<tr><td>{{ i.id_externo }}</td><td>{{ i.fecha_hora|date:"d/m/Y H:i:s" }}</td><td>{{ i.batch.lote.codigo }}</td><td>{{ i.batch.codigo }}</td><td>{{ i.batch.receta.codigo|default:"—" }}</td><td>{{ i.medicion_angular }}</td>
 <td><span class="badge estado-{{ i.estado_original }}">{% if i.estado_original == 'APROBADO' %}[OK] {% elif i.estado_original == 'RECHAZADO' %}[!] {% endif %}{{ i.get_estado_original_display }}</span></td>
 <td><a class="btn btn-sm btn-outline-secondary" href="{% url 'detalle' i.pk %}">Ver detalle</a></td></tr>
-{% empty %}<tr><td colspan="8" class="text-center text-muted">Sin resultados para los filtros aplicados.</td></tr>{% endfor %}</tbody></table>
+{% empty %}<tr><td colspan="8" class="text-center text-muted">Sin resultados para los filtros aplicados.</td></tr>{% endfor %}</tbody></table></div>
 {% include "trazabilidad/_paginacion.html" %}{% endblock %}
