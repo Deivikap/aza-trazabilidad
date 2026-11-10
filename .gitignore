@@ -1,0 +1,12 @@
+db.sqlite3
+.env
+.env.prod
+v/
+.venv/
+__pycache__/
+*.pyc
+staticfiles/
+.coverage
+.pytest_cache/
+*.log
+!evidencias/*.log
