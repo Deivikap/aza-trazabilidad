@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: aza-trazabilidad
+    runtime: python
+    plan: free
+    buildCommand: bash deploy/render_build.sh
+    startCommand: gunicorn aza.wsgi:application --workers 2 --timeout 30 --access-logfile -
+    healthCheckPath: /healthz/
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: DJANGO_DEBUG
+        value: "0"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB
+        value: aza_trazabilidad

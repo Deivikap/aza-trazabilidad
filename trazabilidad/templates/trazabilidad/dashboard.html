@@ -1,11 +1,20 @@
 {% extends "trazabilidad/base.html" %}{% block content %}
-<h1 class="h4 mb-3">Dashboard de indicadores</h1>
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <h1 class="h4 mb-0">Dashboard de indicadores</h1>
+  {% if es_supervisor or es_admin %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'informe_gestion' %}">Ver informe de gestión</a>{% endif %}
+</div>
 <div class="row g-3 mb-4">
 <div class="col-6 col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Inspecciones</div><div class="kpi">{{ total }}</div></div></div></div>
 <div class="col-6 col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Aprobadas</div><div class="kpi">{{ aprobadas }}</div></div></div></div>
 <div class="col-6 col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Rechazadas ({{ pct_rechazo }} %)</div><div class="kpi">{{ rechazadas }}</div></div></div></div>
 <div class="col-6 col-md-3"><div class="card"><div class="card-body"><div class="text-muted small">Alarmas abiertas</div><div class="kpi">{{ alarmas_abiertas }}</div></div></div></div>
 </div>
+<div class="row g-3 mb-4">
+<div class="col-lg-5"><div class="card h-100"><div class="card-header">Distribución de clasificaciones</div><div class="card-body"><canvas class="chart-canvas" data-chart="estados" data-source="dash-chart-estados" role="img" aria-label="Distribución de inspecciones aprobadas, rechazadas y sin receta"></canvas></div></div></div>
+<div class="col-lg-7"><div class="card h-100"><div class="card-header">Evolución reciente de medición angular (°)</div><div class="card-body"><canvas class="chart-canvas" data-chart="angulo" data-source="dash-chart-angulo" role="img" aria-label="Evolución angular de las últimas inspecciones"></canvas></div></div></div>
+</div>
+{{ chart_estados|json_script:"dash-chart-estados" }}
+{{ chart_angulo|json_script:"dash-chart-angulo" }}
 <div class="row g-3">
 <div class="col-md-6"><div class="card"><div class="card-header">Por turno</div><div class="table-responsive"><table class="table mb-0"><thead><tr><th>Turno</th><th>Inspecciones</th><th>Rechazadas</th></tr></thead>
 {% for t,n,r in por_turno %}<tr><td>{{ t }}</td><td>{{ n }}</td><td>{{ r }}</td></tr>{% empty %}<tr><td colspan="3" class="text-muted">Sin datos</td></tr>{% endfor %}</table></div></div></div>
@@ -13,5 +22,5 @@
 {% for t,n,r in por_receta %}<tr><td>{{ t }}</td><td>{{ n }}</td><td>{{ r }}</td></tr>{% empty %}<tr><td colspan="3" class="text-muted">Sin datos</td></tr>{% endfor %}</table></div></div></div>
 </div>
 <h2 class="h6 mt-4">Últimas inspecciones</h2>
-<div class="table-responsive"><table class="table table-sm bg-white"><tbody>{% for i in recientes %}<tr><td><a href="{% url 'detalle' i.pk %}">{{ i.id_externo }}</a></td><td>{{ i.batch.codigo }}</td><td>{{ i.medicion_angular }}</td><td><span class="badge estado-{{ i.estado_original }}">{{ i.get_estado_original_display }}</span></td></tr>{% endfor %}</tbody></table></div>
+<div class="table-responsive"><table class="table table-sm bg-white"><tbody>{% for i in recientes %}<tr><td><a href="{% url 'detalle' i.pk %}">{{ i.id_externo }}</a></td><td>{{ i.batch.codigo }}</td><td>{{ i.medicion_angular }}°</td><td><span class="badge estado-{{ i.estado_original }}">{% if i.estado_original == 'APROBADO' %}[OK] {% elif i.estado_original == 'RECHAZADO' %}[!] {% endif %}{{ i.get_estado_original_display }}</span></td></tr>{% endfor %}</tbody></table></div>
 {% endblock %}

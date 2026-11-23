@@ -1,4 +1,4 @@
-:root{--aza:#d40202}
+:root{--aza:#d40202;--aza-dark:#0f4761}
 .navbar-aza{background:#fff;border-bottom:3px solid var(--aza)}
 .brand{color:var(--aza);font-weight:700}
 .btn-aza{background:var(--aza);color:#fff}.btn-aza:hover{background:#a80101;color:#fff}
@@ -6,5 +6,17 @@
 .estado-RECHAZADO{background:#fdecea;border:1px solid #c62828;color:#b71c1c}
 .estado-SIN_RECETA{background:#fff8e1;border:1px solid #f9a825;color:#7a5800}
 .kpi{font-size:2.2rem;font-weight:700;color:var(--aza)}
+.kpi-ok{font-size:2.2rem;font-weight:700;color:#1b5e20}
+.kpi-dark{font-size:2.2rem;font-weight:700;color:var(--aza-dark)}
 a:not(.btn){color:#0a58ca}
 .btn-outline-secondary{--bs-btn-color:#495057;--bs-btn-border-color:#495057}
+.btn-outline-danger{--bs-btn-color:#b71c1c;--bs-btn-border-color:#b71c1c}
+.chart-canvas{display:block;width:100%}
+.report-header{border-left:4px solid var(--aza);background:#fff}
+.json-payload{max-height:360px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+@media print{
+  .no-print{display:none!important}
+  body{background:#fff!important}
+  .card,.report-header{break-inside:avoid;box-shadow:none!important}
+  .container{max-width:100%!important;padding:0!important}
+}

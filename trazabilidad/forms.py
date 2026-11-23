@@ -27,10 +27,16 @@ class UsuarioForm(forms.Form):
     password = forms.CharField(widget=forms.PasswordInput, label="Contraseña (mín. 12 caracteres)")
 
     def clean_username(self):
-        u = self.cleaned_data["username"]
+        u = self.cleaned_data["username"].strip()
         if User.objects.filter(username=u).exists():
             raise forms.ValidationError("Ya existe ese usuario.")
         return u
+
+    def clean_email(self):
+        e = self.cleaned_data["email"].strip().lower()
+        if User.objects.filter(email__iexact=e).exists():
+            raise forms.ValidationError("Ya existe una cuenta registrada con ese correo.")
+        return e
 
     def clean_password(self):
         p = self.cleaned_data["password"]
@@ -40,6 +46,35 @@ class UsuarioForm(forms.Form):
     def guardar(self):
         d = self.cleaned_data
         u = User.objects.create_user(d["username"], d["email"], d["password"], first_name=d["first_name"])
+        u.groups.add(Group.objects.get(name=d["rol"]))
+        return u
+
+
+class UsuarioEditarForm(forms.Form):
+    first_name = forms.CharField(max_length=100, label="Nombre")
+    email = forms.EmailField(label="Correo")
+    rol = forms.ChoiceField(choices=[(r, r) for r in ROLES])
+
+    def __init__(self, *args, instance=None, **kwargs):
+        self.instance = instance
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+        e = self.cleaned_data["email"].strip().lower()
+        qs = User.objects.filter(email__iexact=e)
+        if self.instance is not None:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise forms.ValidationError("Ya existe otra cuenta con ese correo.")
+        return e
+
+    def guardar(self):
+        d = self.cleaned_data
+        u = self.instance
+        u.first_name = d["first_name"]
+        u.email = d["email"]
+        u.save(update_fields=["first_name", "email"])
+        u.groups.clear()
         u.groups.add(Group.objects.get(name=d["rol"]))
         return u
 

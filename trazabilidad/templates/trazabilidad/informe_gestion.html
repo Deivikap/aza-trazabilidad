@@ -1,0 +1,204 @@
+{% extends "trazabilidad/base.html" %}
+{% block title %}Informe de gestión · Trazabilidad AZA{% endblock %}
+{% block content %}
+<div class="report-header border rounded p-3 mb-4 d-flex flex-wrap justify-content-between align-items-start gap-3">
+  <div>
+    <div class="small text-muted text-uppercase fw-semibold">Aceros AZA · Proceso de Trefilado</div>
+    <h1 class="h4 mb-1">Informe de gestión de inspecciones y trazabilidad</h1>
+    <div class="small text-muted">
+      Generado el {{ generado_en|date:"d/m/Y H:i" }} por <b>{{ user.get_full_name|default:user.username }}</b> ({{ rol }})
+      · Período: {% if g.desde or g.hasta %}{{ g.desde|default:"inicio" }} a {{ g.hasta|default:"hoy" }}{% else %}Todo el histórico{% endif %}
+      {% if g.lote %} · Lote: <b>{{ g.lote }}</b>{% endif %}
+      {% if g.receta %} · Receta: <b>{{ g.receta }}</b>{% endif %}
+    </div>
+  </div>
+  <div class="d-flex flex-wrap gap-2 no-print">
+    <button type="button" class="btn btn-aza btn-sm" data-print-report>Imprimir / Guardar PDF</button>
+    {% if es_supervisor %}<a class="btn btn-outline-secondary btn-sm" href="{% url 'exportar_csv' %}?{{ qs_params }}">Exportar detalle CSV</a>{% endif %}
+  </div>
+</div>
+
+<form class="row g-2 mb-4 bg-white p-3 border rounded no-print" method="get">
+  <div class="col-md-3">
+    <label class="form-label small" for="ig_desde">Desde</label>
+    <input id="ig_desde" type="date" class="form-control" name="desde" value="{{ g.desde }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label small" for="ig_hasta">Hasta</label>
+    <input id="ig_hasta" type="date" class="form-control" name="hasta" value="{{ g.hasta }}">
+  </div>
+  <div class="col-md-3">
+    <label class="form-label small" for="ig_receta">Receta</label>
+    <select id="ig_receta" class="form-select" name="receta">
+      <option value="">Todas</option>
+      {% for r in recetas %}<option value="{{ r.codigo }}" {% if g.receta == r.codigo %}selected{% endif %}>{{ r.codigo }}</option>{% endfor %}
+    </select>
+  </div>
+  <div class="col-md-3">
+    <label class="form-label small" for="ig_lote">Lote</label>
+    <input id="ig_lote" type="text" class="form-control" name="lote" placeholder="Ej: LOTE-TREF" value="{{ g.lote }}">
+  </div>
+  <div class="col-12">
+    <button class="btn btn-aza btn-sm">Generar informe</button>
+    <a class="btn btn-link btn-sm" href="{% url 'informe_gestion' %}">Restablecer filtros</a>
+  </div>
+</form>
+
+<h2 class="h6 text-uppercase text-muted mb-2">1. Resumen ejecutivo</h2>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Total inspecciones</div>
+    <div class="kpi-dark">{{ total }}</div>
+    <div class="small text-muted">Fuente inmutable (cámara)</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Aprobadas ({{ pct_aprobacion }} %)</div>
+    <div class="kpi-ok">{{ aprobadas }}</div>
+    <div class="small text-muted">[OK] Dentro de control</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Rechazadas ({{ pct_rechazo }} %)</div>
+    <div class="kpi">{{ rechazadas }}</div>
+    <div class="small text-muted">Sin receta: {{ sin_receta }} ({{ pct_sin_receta }} %)</div>
+  </div></div></div>
+  <div class="col-6 col-lg-3"><div class="card h-100"><div class="card-body">
+    <div class="text-muted small">Alarmas del período</div>
+    <div class="kpi">{{ alarmas_abiertas }}</div>
+    <div class="small text-muted">Abiertas · {{ alarmas_reconocidas }} reconocidas ({{ alarmas_total }} total)</div>
+  </div></div></div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body py-2 small d-flex flex-wrap gap-4">
+    <div><b>Medición angular promedio:</b> {% if stats_ang.prom is not None %}{{ stats_ang.prom|floatformat:3 }}°{% else %}—{% endif %}</div>
+    <div><b>Mínima registrada:</b> {% if stats_ang.minimo is not None %}{{ stats_ang.minimo }}°{% else %}—{% endif %}</div>
+    <div><b>Máxima registrada:</b> {% if stats_ang.maximo is not None %}{{ stats_ang.maximo }}°{% else %}—{% endif %}</div>
+  </div>
+</div>
+
+<h2 class="h6 text-uppercase text-muted mb-2">2. Indicadores visuales</h2>
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Distribución por clasificación original</div>
+      <div class="card-body">
+        <canvas class="chart-canvas" data-chart="estados" data-source="ig-chart-estados" role="img" aria-label="Distribución de resultados aprobados, rechazados y sin receta"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Inspecciones y rechazos por turno</div>
+      <div class="card-body">
+        <canvas class="chart-canvas" data-chart="turnos" data-source="ig-chart-turnos" role="img" aria-label="Comparativa de inspecciones totales y rechazadas por turno"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">Evolución de medición angular (°) — últimas {{ chart_angulo|length }} inspecciones del período</div>
+      <div class="card-body">
+        <canvas class="chart-canvas" data-chart="angulo" data-source="ig-chart-angulo" role="img" aria-label="Serie temporal de mediciones angulares"></canvas>
+        <div class="small text-muted mt-2">Puntos: verde = Aprobado, rojo = Rechazado, amarillo = Sin receta. Líneas punteadas = tolerancia de referencia.</div>
+      </div>
+    </div>
+  </div>
+</div>
+{{ chart_estados|json_script:"ig-chart-estados" }}
+{{ chart_turnos|json_script:"ig-chart-turnos" }}
+{{ chart_angulo|json_script:"ig-chart-angulo" }}
+
+<h2 class="h6 text-uppercase text-muted mb-2">3. Desempeño operativo por turno y por receta</h2>
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Resumen por turno</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Turno</th><th>Total</th><th>Aprobadas</th><th>Rechazadas</th><th>Sin receta</th><th>% Rechazo</th></tr></thead>
+          <tbody>
+          {% for t in por_turno %}
+            <tr><td>{{ t.turno }}</td><td>{{ t.total }}</td><td>{{ t.aprobadas }}</td><td>{{ t.rechazadas }}</td><td>{{ t.sin_receta }}</td><td><b>{{ t.pct_rechazo }} %</b></td></tr>
+          {% empty %}
+            <tr><td colspan="6" class="text-muted text-center">Sin datos en el período.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Resumen por receta</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Receta</th><th>Tolerancia</th><th>Total</th><th>Rechazadas</th><th>% Rechazo</th></tr></thead>
+          <tbody>
+          {% for r in por_receta %}
+            <tr>
+              <td><b>{{ r.codigo }}</b></td>
+              <td class="small">{% if r.tol_min is not None %}{{ r.tol_min }}° a {{ r.tol_max }}°{% else %}—{% endif %}</td>
+              <td>{{ r.total }}</td><td>{{ r.rechazadas }}</td><td><b>{{ r.pct_rechazo }} %</b></td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="text-muted text-center">Sin datos en el período.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h2 class="h6 text-uppercase text-muted mb-2">4. Trazabilidad consolidada por lote</h2>
+<div class="card mb-4">
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Lote</th><th>Estado</th><th>Batches</th><th>Inspecciones</th><th>Aprobadas</th><th>Rechazadas</th><th>% Rechazo</th></tr></thead>
+      <tbody>
+      {% for l in por_lote %}
+        <tr><td><b>{{ l.codigo }}</b></td><td>{{ l.estado }}</td><td>{{ l.batches }}</td><td>{{ l.total }}</td><td>{{ l.aprobadas }}</td><td>{{ l.rechazadas }}</td><td><b>{{ l.pct_rechazo }} %</b></td></tr>
+      {% empty %}
+        <tr><td colspan="7" class="text-muted text-center">Sin lotes con inspecciones en el período.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h2 class="h6 text-uppercase text-muted mb-2">5. Alarmas y observaciones operativas recientes</h2>
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Alarmas del período</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Inspección</th><th>Estado</th></tr></thead>
+          <tbody>
+          {% for a in alarmas_lista %}
+            <tr><td class="small">{{ a.fecha_hora|date:"d/m/Y H:i" }}</td><td>{{ a.get_tipo_display }}</td><td><a href="{% url 'detalle' a.inspeccion.pk %}">{{ a.inspeccion.id_externo }}</a></td><td>{{ a.get_estado_display }}</td></tr>
+          {% empty %}
+            <tr><td colspan="4" class="text-muted text-center">Sin alarmas registradas en el período.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Observaciones operativas</div>
+      <ul class="list-group list-group-flush">
+        {% for o in observaciones %}
+        <li class="list-group-item small">
+          <div class="text-muted">{{ o.fecha_hora|date:"d/m/Y H:i" }} · <b>{{ o.usuario.username }}</b> · <a href="{% url 'detalle' o.inspeccion.pk %}">{{ o.inspeccion.id_externo }}</a></div>
+          {{ o.contenido }}
+        </li>
+        {% empty %}
+        <li class="list-group-item small text-muted text-center">Sin observaciones en el período.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}

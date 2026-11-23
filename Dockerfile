@@ -7,7 +7,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=aza:aza . .
-RUN chmod +x deploy/entrypoint.sh
+RUN chmod +x deploy/entrypoint.sh \
+    && DJANGO_DEBUG=1 python manage.py collectstatic --noinput \
+    && chown -R aza:aza /app/staticfiles
 USER aza
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD python -c "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz/').status==200 else 1)"

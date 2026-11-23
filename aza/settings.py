@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
@@ -7,7 +8,10 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-only-cambiar-en-produccion
 if not DEBUG and (SECRET_KEY.startswith("dev-only") or SECRET_KEY.startswith("cambia-esto") or len(SECRET_KEY) < 40):
     from django.core.exceptions import ImproperlyConfigured
     raise ImproperlyConfigured("Define DJANGO_SECRET_KEY (>=40 caracteres aleatorios) cuando DJANGO_DEBUG=0.")
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+_render_host = os.environ.get("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if _render_host and _render_host not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(_render_host)
 
 INSTALLED_APPS = [
     "django.contrib.admin", "django.contrib.auth", "django.contrib.contenttypes",
@@ -36,8 +40,41 @@ TEMPLATES = [{
         "trazabilidad.context.rol"]},
 }]
 
-# --- MariaDB (relacional, fuente de verdad) ---------------------------------
-if os.environ.get("DB_ENGINE", "sqlite") == "mysql":
+# --- Base de datos relacional (fuente de verdad: PostgreSQL/Supabase o MariaDB) ---
+_database_url = os.environ.get("DATABASE_URL", "").strip()
+_db_engine = os.environ.get("DB_ENGINE", "sqlite")
+if _database_url.startswith(("postgres://", "postgresql://")):
+    _u = urlparse(_database_url)
+    _q = parse_qs(_u.query)
+    _sslmode = _q.get("sslmode", [os.environ.get("DB_SSLMODE", "require")])[0]
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": unquote(_u.path.lstrip("/")) or "postgres",
+        "USER": unquote(_u.username or ""),
+        "PASSWORD": unquote(_u.password or ""),
+        "HOST": _u.hostname or "127.0.0.1",
+        "PORT": str(_u.port or 5432),
+        "CONN_MAX_AGE": 60,
+        "OPTIONS": {"sslmode": _sslmode},
+    }}
+    _usa_bd_externa = True
+elif _db_engine == "postgres":
+    DATABASES = {"default": {
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.environ.get("DB_NAME", "postgres"),
+        "USER": os.environ.get("DB_USER", "postgres"),
+        "PASSWORD": os.environ.get("DB_PASSWORD", ""),
+        "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
+        "PORT": os.environ.get("DB_PORT", "5432"),
+        "CONN_MAX_AGE": 60,
+        "OPTIONS": {"sslmode": os.environ.get("DB_SSLMODE", "require")},
+    }}
+    _usa_bd_externa = True
+elif _db_engine == "mysql":
+    _mysql_opts = {"charset": "utf8mb4"}
+    if os.environ.get("DB_SSL", "0") == "1":
+        _ssl_ca = os.environ.get("DB_SSL_CA", "")
+        _mysql_opts["ssl"] = {"ca": _ssl_ca} if _ssl_ca else {"ssl_mode": "REQUIRED"}
     DATABASES = {"default": {
         "ENGINE": "django.db.backends.mysql",
         "NAME": os.environ.get("DB_NAME", "aza_trazabilidad"),
@@ -45,10 +82,12 @@ if os.environ.get("DB_ENGINE", "sqlite") == "mysql":
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
         "HOST": os.environ.get("DB_HOST", "127.0.0.1"),
         "PORT": os.environ.get("DB_PORT", "3306"),
-        "OPTIONS": {"charset": "utf8mb4"},
+        "OPTIONS": _mysql_opts,
     }}
+    _usa_bd_externa = True
 else:  # solo para desarrollo rápido / pruebas
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": BASE_DIR / "db.sqlite3"}}
+    _usa_bd_externa = False
 
 # --- MongoDB (payload JSON crudo) ------------------------------------------
 # Por defecto "mongomock" (en memoria) para arrancar sin servidores; con Docker se usa mongodb://mongo:27017
@@ -85,9 +124,13 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_REFERRER_POLICY = "same-origin"
-if os.environ.get("TRUST_PROXY", "0") == "1":  # detrás de Caddy/Nginx que termina TLS
+if os.environ.get("TRUST_PROXY", "0") == "1" or _render_host:  # detrás de Render/Caddy/Nginx que termina TLS
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-CSRF_TRUSTED_ORIGINS = [o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o]
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
+if _render_host:
+    _render_origin = f"https://{_render_host}"
+    if _render_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(_render_origin)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
@@ -97,7 +140,7 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "trazabilidad.api.exception_handler",
 }
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.db.DatabaseCache", "LOCATION": "cache_aza"}
-          if os.environ.get("DB_ENGINE", "sqlite") == "mysql" else
+          if _usa_bd_externa else
           {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 # Recuperación de contraseña: enlace de un solo uso con vigencia de 1 hora.

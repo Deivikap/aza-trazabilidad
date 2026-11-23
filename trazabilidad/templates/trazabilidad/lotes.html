@@ -1,6 +1,17 @@
 {% extends "trazabilidad/base.html" %}{% block content %}
 <h1 class="h4 mb-3">Lotes y batches</h1>
-<div class="row g-3 mb-4"><div class="col-md-6"><div class="card"><div class="card-header">Nuevo lote</div><div class="card-body"><form method="post">{% csrf_token %}{{ fl.as_p }}<button name="guardar_lote" class="btn btn-aza btn-sm">Guardar lote</button></form></div></div></div>
-<div class="col-md-6"><div class="card"><div class="card-header">Nuevo batch</div><div class="card-body"><form method="post">{% csrf_token %}{{ fb.as_p }}<button name="guardar_batch" class="btn btn-aza btn-sm">Guardar batch</button></form></div></div></div></div>
-<div class="table-responsive"><table class="table bg-white"><thead><tr><th>Lote</th><th>Estado</th><th>Batches (receta)</th></tr></thead><tbody>
-{% for l in lotes %}<tr><td>{{ l.codigo }}</td><td>{{ l.get_estado_display }}</td><td>{% for b in l.batches.all %}{{ b.codigo }} ({{ b.receta.codigo|default:"sin receta" }}){% if not forloop.last %}, {% endif %}{% endfor %}</td></tr>{% endfor %}</tbody></table></div>{% endblock %}
+<div class="alert alert-info small">Integridad referencial (<code>ON DELETE RESTRICT</code>): los lotes y batches sin dependencias pueden eliminarse; si ya tienen registros asociados, deben cerrarse o finalizarse para conservar la trazabilidad.</div>
+<div class="row g-3 mb-4">
+<div class="col-md-6"><div class="card"><div class="card-header">{% if editando_lote %}Editar lote: {{ editando_lote.codigo }}{% else %}Nuevo lote{% endif %}</div><div class="card-body"><form method="post">{% csrf_token %}{{ fl.as_p }}<div class="d-flex gap-2"><button name="guardar_lote" class="btn btn-aza btn-sm">{% if editando_lote %}Guardar cambios{% else %}Guardar lote{% endif %}</button>{% if editando_lote %}<a href="{% url 'lotes' %}" class="btn btn-outline-secondary btn-sm">Cancelar</a>{% endif %}</div></form></div></div></div>
+<div class="col-md-6"><div class="card"><div class="card-header">{% if editando_batch %}Editar batch: {{ editando_batch.codigo }}{% else %}Nuevo batch{% endif %}</div><div class="card-body"><form method="post">{% csrf_token %}{{ fb.as_p }}<div class="d-flex gap-2"><button name="guardar_batch" class="btn btn-aza btn-sm">{% if editando_batch %}Guardar cambios{% else %}Guardar batch{% endif %}</button>{% if editando_batch %}<a href="{% url 'lotes' %}" class="btn btn-outline-secondary btn-sm">Cancelar</a>{% endif %}</div></form></div></div></div>
+</div>
+<h2 class="h6 mb-2">Lotes registrados</h2>
+<div class="table-responsive mb-4"><table class="table bg-white align-middle"><thead><tr><th>Lote</th><th>Estado</th><th>Batches (receta)</th><th>Acciones</th></tr></thead><tbody>
+{% for l in lotes %}<tr><td><b>{{ l.codigo }}</b></td><td>{{ l.get_estado_display }}</td><td>{% for b in l.batches.all %}{{ b.codigo }} ({{ b.receta.codigo|default:"sin receta" }}){% if not forloop.last %}, {% endif %}{% empty %}<span class="text-muted">Sin batches</span>{% endfor %}</td>
+<td><div class="d-flex gap-1"><a href="{% url 'lote_editar' l.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a><form method="post" action="{% url 'lote_eliminar' l.pk %}" data-confirm="¿Eliminar el lote {{ l.codigo }}?">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Eliminar</button></form></div></td></tr>
+{% empty %}<tr><td colspan="4" class="text-muted text-center">No hay lotes registrados.</td></tr>{% endfor %}</tbody></table></div>
+<h2 class="h6 mb-2">Batches registrados</h2>
+<div class="table-responsive"><table class="table bg-white align-middle"><thead><tr><th>Batch</th><th>Lote</th><th>Receta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
+{% for b in batches %}<tr><td><b>{{ b.codigo }}</b></td><td>{{ b.lote.codigo }}</td><td>{{ b.receta.codigo|default:"— sin receta —" }}</td><td>{{ b.get_estado_display }}</td>
+<td><div class="d-flex gap-1"><a href="{% url 'batch_editar' b.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a><form method="post" action="{% url 'batch_eliminar' b.pk %}" data-confirm="¿Eliminar el batch {{ b.codigo }}?">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Eliminar</button></form></div></td></tr>
+{% empty %}<tr><td colspan="5" class="text-muted text-center">No hay batches registrados.</td></tr>{% endfor %}</tbody></table></div>{% endblock %}

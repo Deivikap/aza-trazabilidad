@@ -9,8 +9,29 @@
 <dt class="col-5">Límites usados</dt><dd class="col-7">{% if i.limite_min is not None %}{{ i.limite_min }}° a {{ i.limite_max }}°{% else %}—{% endif %}</dd>
 </dl></div></div></div>
 <div class="col-md-6"><div class="card"><div class="card-body"><div class="small text-muted mb-1">Clasificación original · solo lectura · fuente: cámara de trefilado</div>
-<div class="p-3 rounded estado-{{ i.estado_original }} fs-5">🔒 {{ i.get_estado_original_display }}</div>
+<div class="p-3 rounded estado-{{ i.estado_original }} fs-5">🔒 {% if i.estado_original == 'APROBADO' %}[OK] {% elif i.estado_original == 'RECHAZADO' %}[!] {% endif %}{{ i.get_estado_original_display }}</div>
 <p class="small text-muted mt-2 mb-0">La plataforma nunca recalcula este valor, aunque la receta cambie después.</p></div></div></div></div>
+<div class="card mt-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Respaldo documental (MongoDB · payload JSON original)</span>
+    {% if mostrar_payload %}
+      <a href="{% url 'detalle' i.pk %}" class="btn btn-sm btn-outline-secondary">Ocultar payload</a>
+    {% else %}
+      <a href="{% url 'detalle' i.pk %}?payload=1" class="btn btn-sm btn-outline-secondary">Ver payload JSON original</a>
+    {% endif %}
+  </div>
+  {% if mostrar_payload %}
+  <div class="card-body">
+    {% if payload_error %}
+      <div class="alert alert-warning small mb-0">No se pudo consultar MongoDB en este momento. El registro relacional en MariaDB sigue íntegro.</div>
+    {% elif payload_json %}
+      <pre class="json-payload bg-light border rounded p-3 small mb-0">{{ payload_json }}</pre>
+    {% else %}
+      <div class="alert alert-secondary small mb-0">No se encontró documento JSON en MongoDB para <code>{{ i.id_externo }}</code>. Puedes reconstruirlo con <code>python manage.py reconciliar_mongo --reparar</code>.</div>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
 <h2 class="h6 mt-4">Observaciones operativas</h2>
 <ul class="list-group mb-3">{% for o in observaciones %}<li class="list-group-item"><div class="small text-muted">{{ o.usuario.username }} · {{ o.fecha_hora|date:"d/m/Y H:i" }}</div>{{ o.contenido }}</li>{% empty %}<li class="list-group-item text-muted">Sin observaciones.</li>{% endfor %}</ul>
 {% if es_operador or es_supervisor %}<form method="post" class="bg-white p-3 border rounded">{% csrf_token %}{{ form.as_p }}<button class="btn btn-aza btn-sm">Registrar observación</button></form>{% endif %}

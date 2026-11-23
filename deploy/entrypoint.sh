@@ -7,5 +7,7 @@ if [ "${DB_ENGINE:-sqlite}" = "mysql" ]; then
 fi
 python manage.py migrate --noinput
 python manage.py createcachetable
-python manage.py collectstatic --noinput
+if [ -w /app ]; then
+  python manage.py collectstatic --noinput
+fi
 exec "$@"

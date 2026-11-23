@@ -51,6 +51,8 @@ Muestra 201, 409 (duplicado), 422 (incompleto) y 401 (token inválido).
 | CU11 Alarmas y reconocimiento | | ● | ● | /alarmas/ |
 | CU12 Bitácora de auditoría | ● | | | /administracion/auditoria/ |
 | CU13 Exportar CSV (neutraliza fórmulas) | | ● | | /historial/exportar/ |
+| CU14 Recuperar contraseña | ● | ● | ● | /password/recuperar/ |
+| Informe de gestión (filtros, gráficos, PDF) | ● | ● | | /informe-gestion/ |
 
 ## Pruebas
 ```bash
