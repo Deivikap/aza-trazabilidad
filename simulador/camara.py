@@ -9,7 +9,7 @@ import requests
 
 
 def enviar(url, token, payload):
-    r = requests.post(f"{url}/api/v1/inspecciones/", json=payload, headers={"Authorization": f"Bearer {token}"}, timeout=10)
+    r = requests.post(f"{url}/api/v1/inspecciones/", json=payload, headers={"Authorization": f"Bearer {token}"}, timeout=60)
     print(r.status_code, payload.get("id_externo"), r.text[:120])
     return r
 

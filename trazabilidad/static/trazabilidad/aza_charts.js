@@ -181,7 +181,7 @@
     var ctx = c.ctx, w = c.w, h = c.h;
     if (!rows || !rows.length) return drawEmpty(ctx, w, h, "Sin datos por turno");
 
-    var pad = { l: 42, r: 16, t: 26, b: 34 };
+    var pad = { l: 42, r: 16, t: 42, b: 34 };
     var pw = w - pad.l - pad.r;
     var ph = h - pad.t - pad.b;
     var maxVal = Math.max.apply(null, rows.map(function (r) { return r.total; }).concat([1]));
@@ -190,10 +190,10 @@
     ctx.font = "11px system-ui, -apple-system, sans-serif";
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    ctx.fillStyle = "#0f4761"; ctx.fillRect(pad.l, 6, 12, 10);
-    ctx.fillStyle = "#212529"; ctx.fillText("Total", pad.l + 16, 11);
-    ctx.fillStyle = "#c62828"; ctx.fillRect(pad.l + 64, 6, 12, 10);
-    ctx.fillStyle = "#212529"; ctx.fillText("Rechazadas", pad.l + 80, 11);
+    ctx.fillStyle = "#0f4761"; ctx.fillRect(pad.l, 8, 12, 10);
+    ctx.fillStyle = "#212529"; ctx.fillText("Total", pad.l + 16, 13);
+    ctx.fillStyle = "#c62828"; ctx.fillRect(pad.l + 64, 8, 12, 10);
+    ctx.fillStyle = "#212529"; ctx.fillText("Rechazadas", pad.l + 80, 13);
 
     var groupW = pw / rows.length;
     var barW = Math.min(34, groupW * 0.32);

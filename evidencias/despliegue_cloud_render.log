@@ -1,0 +1,31 @@
+﻿=== Verificacion despliegue cloud Render + Supabase + MongoDB Atlas (23/11/2026) ===
+
+--- GET /healthz/ ---
+{"estado": "ok", "mariadb": true, "mongodb": true}
+
+--- Redireccion HTTP -> HTTPS ---
+HTTP -> HTTPS status: 301 -> https://aza-trazabilidad-f1hk.onrender.com/login/
+
+--- Handshake TLS 1.3 y cabeceras de seguridad (/login/) ---
+* ALPN: curl offers http/1.1
+* ALPN: server accepted http/1.1
+* using HTTP/1.x
+> GET /login/ HTTP/1.1
+< HTTP/1.1 200 OK
+< content-security-policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+< cross-origin-opener-policy: same-origin
+< permissions-policy: camera=(), microphone=(), geolocation=()
+< referrer-policy: same-origin
+< strict-transport-security: max-age=31536000; includeSubDomains
+< x-content-type-options: nosniff
+< x-frame-options: DENY
+
+--- Simulador de camara en vivo (CU04) ---
+201 SIM-82538-0..4 (5 inspecciones creadas en Supabase + MongoDB Atlas)
+409 SIM-82538-4 (id_externo duplicado)
+422 SIM-INCOMPLETO (campos faltantes)
+401 SIM-82538-4 (token invalido)
+
+
+--- Negociacion TLS real (Python ssl) ---
+TLSv1.3 ('TLS_AES_256_GCM_SHA384', 'TLSv1.3', 256)

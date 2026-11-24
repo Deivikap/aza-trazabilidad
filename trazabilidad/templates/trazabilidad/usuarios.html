@@ -5,7 +5,7 @@
 {% for u,r in lista %}<tr><td>{{ u.username }}</td><td>{{ u.first_name }}</td><td class="small">{{ u.email|default:"—" }}</td><td>{{ r|default:"—" }}</td><td>{% if u.is_active %}Activo{% else %}<span class="text-muted">Inactivo</span>{% endif %}</td>
 <td><div class="d-flex flex-wrap gap-1">
 <a href="{% url 'usuario_editar' u.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a>
-<form method="post" action="{% url 'usuario_toggle' u.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">{% if u.is_active %}Desactivar{% else %}Activar{% endif %}</button></form>
+<form method="post" action="{% url 'usuario_toggle' u.pk %}" data-confirm="¿Seguro que deseas {% if u.is_active %}desactivar{% else %}activar{% endif %} al usuario {{ u.username }}?">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">{% if u.is_active %}Desactivar{% else %}Activar{% endif %}</button></form>
 {% if u.is_active %}<form method="post" action="{% url 'usuario_reset' u.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Enviar enlace</button></form>{% endif %}
 </div></td></tr>{% endfor %}</tbody></table></div></div>
 <div class="col-lg-4"><div class="card"><div class="card-header">{% if editando %}Editar usuario: {{ editando.username }}{% else %}Nuevo usuario{% endif %}</div><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<div class="d-flex gap-2"><button class="btn btn-aza btn-sm">{% if editando %}Guardar cambios{% else %}Crear{% endif %}</button>{% if editando %}<a href="{% url 'usuarios' %}" class="btn btn-outline-secondary btn-sm">Cancelar</a>{% endif %}</div></form></div></div></div></div>{% endblock %}
