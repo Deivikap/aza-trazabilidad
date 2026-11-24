@@ -1,5 +1,7 @@
 :root{--aza:#d40202;--aza-dark:#0f4761}
 .navbar-aza{background:#fff;border-bottom:3px solid var(--aza)}
+.navbar-aza .navbar-brand{white-space:nowrap}
+.navbar-aza .nav-link{white-space:nowrap;font-size:.9rem;padding:.35rem .55rem}
 .brand{color:var(--aza);font-weight:700}
 .btn-aza{background:var(--aza);color:#fff}.btn-aza:hover{background:#a80101;color:#fff}
 .estado-APROBADO{background:#e8f5e9;border:1px solid #2e7d32;color:#1b5e20}

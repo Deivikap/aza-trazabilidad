@@ -5,8 +5,8 @@
 <link href="{% static "trazabilidad/aza.css" %}" rel="stylesheet">
 </head><body class="bg-light">
 {% if user.is_authenticated %}
-<nav class="navbar navbar-expand-lg navbar-aza no-print"><div class="container">
- <a class="navbar-brand brand" href="{% url 'dashboard' %}">AZA · Trazabilidad</a>
+<nav class="navbar navbar-expand-xl navbar-aza no-print"><div class="container-fluid px-3">
+ <a class="navbar-brand brand me-3" href="{% url 'dashboard' %}">AZA · Trazabilidad</a>
  <button class="navbar-toggler" type="button" aria-label="Abrir navegación" data-bs-toggle="collapse" data-bs-target="#nv"><span class="navbar-toggler-icon"></span></button>
  <div id="nv" class="collapse navbar-collapse"><ul class="navbar-nav me-auto">
   <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
@@ -14,7 +14,7 @@
   <li class="nav-item"><a class="nav-link" href="{% url 'trazabilidad' %}">Trazabilidad</a></li>
   {% if es_supervisor or es_admin %}
   <li class="nav-item"><a class="nav-link" href="{% url 'rendimiento' %}">Rendimiento</a></li>
-  <li class="nav-item"><a class="nav-link" href="{% url 'informe_gestion' %}">Informe de gestión</a></li>{% endif %}
+  <li class="nav-item"><a class="nav-link" href="{% url 'informe_gestion' %}">Informe gestión</a></li>{% endif %}
   {% if es_supervisor %}<li class="nav-item"><a class="nav-link" href="{% url 'revision_lotes' %}">Revisión lotes</a></li>{% endif %}
   {% if es_operador or es_supervisor %}<li class="nav-item"><a class="nav-link" href="{% url 'alarmas' %}">Alarmas</a></li>{% endif %}
   {% if es_admin %}
@@ -23,8 +23,8 @@
   <li class="nav-item"><a class="nav-link" href="{% url 'recetas' %}">Recetas</a></li>
   <li class="nav-item"><a class="nav-link" href="{% url 'auditoria' %}">Auditoría</a></li>{% endif %}
  </ul>
- <span class="me-3 small text-muted">{{ user.get_full_name|default:user.username }} · <b>{{ rol }}</b></span>
- <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="btn btn-outline-secondary btn-sm">Salir</button></form>
+ <span class="me-2 small text-muted text-nowrap">{{ user.get_full_name|default:user.username }} · <b>{{ rol }}</b></span>
+ <form method="post" action="{% url 'logout' %}" class="d-inline">{% csrf_token %}<button class="btn btn-outline-secondary btn-sm">Salir</button></form>
  </div></div></nav>{% endif %}
 <main class="container py-4">
 {% for m in messages %}<div class="alert alert-{% if m.tags == 'error' %}danger{% else %}{{ m.tags|default:'info' }}{% endif %} no-print">{{ m }}</div>{% endfor %}
