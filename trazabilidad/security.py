@@ -1,5 +1,6 @@
 """Política de bloqueo por intentos fallidos configurable por el Administrador (RNF-01)."""
 from datetime import timedelta
+from django.db import DatabaseError
 
 
 def obtener_config_seguridad():
@@ -9,8 +10,8 @@ def obtener_config_seguridad():
         cfg = ConfiguracionSeguridad.objects.filter(pk=1).first()
         if cfg is not None:
             return cfg.max_intentos_login, cfg.minutos_bloqueo
-    except Exception:
-        pass
+    except DatabaseError:
+        return 5, 15
     return 5, 15
 
 
