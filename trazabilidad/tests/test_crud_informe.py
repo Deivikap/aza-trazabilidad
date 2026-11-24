@@ -5,9 +5,9 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from trazabilidad.models import Batch, EventoAuditoria, Inspeccion, Lote, Receta
+from trazabilidad.models import Alarma, Batch, ConfiguracionSeguridad, EventoAuditoria, Inspeccion, Lote, Observacion, Receta
 from trazabilidad.roles import ADMIN, OPERADOR, SUPERVISOR, role_of
-from .conftest import payload
+from .conftest import PW, payload
 from .test_api import post
 
 User = get_user_model()
@@ -186,3 +186,96 @@ def test_dashboard_incluye_graficos_sin_inline(client, cliente_rol, datos, token
     assert r.status_code == 200
     assert "dash-chart-estados" in html and "dash-chart-angulo" in html
     assert "<style" not in html and "onclick=" not in html
+
+
+# ---- Panel de rendimiento (diario, semanal, mensual) -------------------------------------------------------
+def test_rendimiento_diario_semanal_mensual_y_rbac(client, cliente_rol, datos, token, usuarios):
+    from django.utils import timezone
+    ahora_iso = timezone.now().isoformat()
+    p1 = {**payload(idx="REND-1", est="APROBADO", ang=0.4), "fecha_hora": ahora_iso}
+    p2 = {**payload(idx="REND-2", batch="B-2", est="SIN_RECETA", ang=0.2, receta=None), "fecha_hora": ahora_iso}
+    assert post(client, token, p1).status_code == 201
+    assert post(client, token, p2).status_code == 201
+
+    insp = Inspeccion.objects.get(id_externo="REND-1")
+    Observacion.objects.create(inspeccion=insp, usuario=usuarios[OPERADOR], contenido="Revisión de turno")
+    alarma = Alarma.objects.first()
+    alarma.estado = "RECONOCIDA"
+    alarma.usuario_rec = usuarios[SUPERVISOR]
+    alarma.fecha_rec = timezone.now()
+    alarma.save()
+
+    assert cliente_rol(OPERADOR).get(reverse("rendimiento")).status_code == 403
+    c_sup = cliente_rol(SUPERVISOR)
+    for per in ("diario", "semanal", "mensual"):
+        r = c_sup.get(reverse("rendimiento") + f"?periodo={per}")
+        html = r.content.decode()
+        assert r.status_code == 200 and r.context["periodo"] == per
+        assert "rend-chart-ef" in html and "<style" not in html and "onclick=" not in html
+        assert len(r.context["resumen_horizontes"]) == 3
+        assert len(r.context["personal"]) >= 2
+    assert cliente_rol(ADMIN).get(reverse("rendimiento")).status_code == 200
+
+
+# ---- Política de intentos fallidos configurable por Admin --------------------------------------------------
+def test_config_seguridad_admin_modifica_limite_y_aplica_a_axes(client, cliente_rol, usuarios):
+    c_adm = cliente_rol(ADMIN)
+    r = c_adm.post(reverse("config_seguridad"), {"max_intentos_login": 3, "minutos_bloqueo": 20})
+    assert r.status_code == 302
+    cfg = ConfiguracionSeguridad.actual()
+    assert cfg.max_intentos_login == 3 and cfg.minutos_bloqueo == 20
+    assert EventoAuditoria.objects.filter(accion="CONFIG_SEGURIDAD_ACTUALIZADA", resultado="EXITO").exists()
+
+    c_adm.logout()
+    login_html = client.get(reverse("login")).content.decode()
+    assert "Tras 3 intentos fallidos" in login_html and "20 minutos" in login_html
+
+    # Comprueba que django-axes aplica el nuevo límite de 3 intentos en caliente
+    for _ in range(3):
+        client.post(reverse("login"), {"username": "operador", "password": "incorrecta"})
+    r_bloq = client.post(reverse("login"), {"username": "operador", "password": PW})
+    assert r_bloq.status_code == 429
+
+
+def test_config_seguridad_valida_rangos_y_rbac(cliente_rol, usuarios):
+    c_adm = cliente_rol(ADMIN)
+    c_adm.post(reverse("config_seguridad"), {"max_intentos_login": 1, "minutos_bloqueo": 2})
+    cfg = ConfiguracionSeguridad.actual()
+    assert cfg.max_intentos_login == 5 and cfg.minutos_bloqueo == 15  # no acepta valores inseguros
+    assert EventoAuditoria.objects.filter(accion="CONFIG_SEGURIDAD_ACTUALIZADA", resultado="FALLO").exists()
+
+    assert cliente_rol(OPERADOR).post(reverse("config_seguridad"), {"max_intentos_login": 4, "minutos_bloqueo": 10}).status_code == 403
+    assert cliente_rol(SUPERVISOR).post(reverse("config_seguridad"), {"max_intentos_login": 4, "minutos_bloqueo": 10}).status_code == 403
+
+
+# ---- Aprobación y rechazo de lotes por el Supervisor -------------------------------------------------------
+def test_supervisor_aprueba_y_rechaza_lote_sin_alterar_inspecciones(client, cliente_rol, datos, token):
+    assert post(client, token, payload(idx="LOT-REV-1", est="RECHAZADO", ang=3.1)).status_code == 201
+    lote = datos["lote"]
+    c_sup = cliente_rol(SUPERVISOR)
+    assert c_sup.get(reverse("revision_lotes")).status_code == 200
+
+    r1 = c_sup.post(reverse("lote_decidir", args=[lote.pk]), {"decision": "APROBADO", "comentario": "Dentro de tolerancia global"})
+    assert r1.status_code == 302
+    lote.refresh_from_db()
+    assert lote.decision_supervisor == "APROBADO" and lote.supervisor_decision.username == "supervisor"
+    assert EventoAuditoria.objects.filter(accion="LOTE_APROBADO", resultado="EXITO").exists()
+
+    r2 = c_sup.post(reverse("lote_decidir", args=[lote.pk]), {"decision": "RECHAZADO", "comentario": "Desviación recurrente"})
+    assert r2.status_code == 302
+    lote.refresh_from_db()
+    assert lote.decision_supervisor == "RECHAZADO"
+    assert EventoAuditoria.objects.filter(accion="LOTE_RECHAZADO", resultado="EXITO").exists()
+
+    # La clasificación original de la inspección individual sigue inmutable
+    assert Inspeccion.objects.get(id_externo="LOT-REV-1").estado_original == "RECHAZADO"
+
+
+def test_revision_lotes_exclusiva_de_supervisor(cliente_rol, datos):
+    lote = datos["lote"]
+    assert cliente_rol(ADMIN).get(reverse("revision_lotes")).status_code == 403
+    assert cliente_rol(OPERADOR).get(reverse("revision_lotes")).status_code == 403
+    assert cliente_rol(ADMIN).post(reverse("lote_decidir", args=[lote.pk]), {"decision": "APROBADO"}).status_code == 403
+    assert cliente_rol(OPERADOR).post(reverse("lote_decidir", args=[lote.pk]), {"decision": "RECHAZADO"}).status_code == 403
+    assert cliente_rol(SUPERVISOR).get(reverse("lote_decidir", args=[lote.pk])).status_code == 405
+

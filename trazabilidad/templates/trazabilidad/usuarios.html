@@ -8,4 +8,13 @@
 <form method="post" action="{% url 'usuario_toggle' u.pk %}" data-confirm="¿Seguro que deseas {% if u.is_active %}desactivar{% else %}activar{% endif %} al usuario {{ u.username }}?">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">{% if u.is_active %}Desactivar{% else %}Activar{% endif %}</button></form>
 {% if u.is_active %}<form method="post" action="{% url 'usuario_reset' u.pk %}">{% csrf_token %}<button class="btn btn-sm btn-outline-secondary">Enviar enlace</button></form>{% endif %}
 </div></td></tr>{% endfor %}</tbody></table></div></div>
-<div class="col-lg-4"><div class="card"><div class="card-header">{% if editando %}Editar usuario: {{ editando.username }}{% else %}Nuevo usuario{% endif %}</div><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<div class="d-flex gap-2"><button class="btn btn-aza btn-sm">{% if editando %}Guardar cambios{% else %}Crear{% endif %}</button>{% if editando %}<a href="{% url 'usuarios' %}" class="btn btn-outline-secondary btn-sm">Cancelar</a>{% endif %}</div></form></div></div></div></div>{% endblock %}
+<div class="col-lg-4">
+  <div class="card mb-3"><div class="card-header">{% if editando %}Editar usuario: {{ editando.username }}{% else %}Nuevo usuario{% endif %}</div><div class="card-body"><form method="post">{% csrf_token %}{{ form.as_p }}<div class="d-flex gap-2"><button class="btn btn-aza btn-sm">{% if editando %}Guardar cambios{% else %}Crear{% endif %}</button>{% if editando %}<a href="{% url 'usuarios' %}" class="btn btn-outline-secondary btn-sm">Cancelar</a>{% endif %}</div></form></div></div>
+  <div class="card">
+    <div class="card-header">Política de bloqueo por intentos fallidos (RNF-01)</div>
+    <div class="card-body">
+      <form method="post" action="{% url 'config_seguridad' %}">{% csrf_token %}{{ cfg_form.as_p }}<button class="btn btn-aza btn-sm">Guardar política</button></form>
+      <div class="small text-muted mt-2">Rango seguro: 3–10 intentos · 5–120 min. Aplica de inmediato a <code>django-axes</code> y queda auditado.</div>
+    </div>
+  </div>
+</div></div>{% endblock %}

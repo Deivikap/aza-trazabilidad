@@ -1,0 +1,59 @@
+{% extends "trazabilidad/base.html" %}
+{% block title %}Revisión de lotes · Trazabilidad AZA{% endblock %}
+{% block content %}
+<h1 class="h4 mb-2">Aprobación y rechazo de lotes (Supervisor)</h1>
+<div class="alert alert-info small">
+  La decisión sobre el lote es un veredicto de gestión de calidad exclusivo del perfil <b>Supervisor</b> y queda auditada.
+  Nunca altera la clasificación original e inmutable de las inspecciones individuales emitidas por la cámara (RF-10).
+</div>
+
+<div class="table-responsive">
+  <table class="table bg-white align-middle">
+    <thead>
+      <tr>
+        <th>Lote</th>
+        <th>Estado prod.</th>
+        <th>Batches / Insp.</th>
+        <th>Aprob. / Rech. / Sin rec.</th>
+        <th>Efectividad</th>
+        <th>Decisión Supervisor</th>
+        <th>Aprobar / Rechazar</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for f in filas %}
+      <tr>
+        <td><b>{{ f.lote.codigo }}</b></td>
+        <td>{{ f.lote.get_estado_display }}</td>
+        <td>{{ f.batches }} / {{ f.total }}</td>
+        <td class="small">{{ f.aprobadas }} / {{ f.rechazadas }} ({{ f.pct_rechazo }} %) / {{ f.sin_receta }}</td>
+        <td><b>{{ f.efectividad }} %</b></td>
+        <td>
+          <span class="badge estado-{{ f.lote.decision_supervisor }}">
+            {% if f.lote.decision_supervisor == 'APROBADO' %}[OK] {% elif f.lote.decision_supervisor == 'RECHAZADO' %}[!] {% endif %}{{ f.lote.get_decision_supervisor_display }}
+          </span>
+          {% if f.lote.supervisor_decision %}
+          <div class="small text-muted mt-1">{{ f.lote.supervisor_decision.username }} · {{ f.lote.fecha_decision|date:"d/m/Y H:i" }}</div>
+          {% endif %}
+          {% if f.lote.comentario_decision %}
+          <div class="small">{{ f.lote.comentario_decision }}</div>
+          {% endif %}
+        </td>
+        <td>
+          <form method="post" action="{% url 'lote_decidir' f.lote.pk %}" class="d-flex flex-column gap-1">
+            {% csrf_token %}
+            <input type="text" name="comentario" maxlength="300" class="form-control form-control-sm" placeholder="Motivo u observación (opcional)" aria-label="Comentario para lote {{ f.lote.codigo }}">
+            <div class="d-flex gap-1">
+              <button name="decision" value="APROBADO" class="btn btn-sm btn-outline-success">Aprobar</button>
+              <button name="decision" value="RECHAZADO" class="btn btn-sm btn-outline-danger">Rechazar</button>
+            </div>
+          </form>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="text-center text-muted">No hay lotes registrados.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

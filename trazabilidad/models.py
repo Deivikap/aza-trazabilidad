@@ -24,9 +24,16 @@ class Receta(models.Model):
 
 class Lote(models.Model):
     ESTADOS = [("ACTIVO", "Activo"), ("CERRADO", "Cerrado")]
+    ESTADOS_REVISION = [("PENDIENTE", "Pendiente"), ("APROBADO", "Aprobado"), ("RECHAZADO", "Rechazado")]
     codigo = models.CharField(max_length=50, unique=True)
     fecha_registro = models.DateTimeField(auto_now_add=True, db_index=True)
     estado = models.CharField(max_length=10, choices=ESTADOS, default="ACTIVO")
+    decision_supervisor = models.CharField(max_length=12, choices=ESTADOS_REVISION, default="PENDIENTE", db_index=True)
+    supervisor_decision = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="lotes_revisados"
+    )
+    fecha_decision = models.DateTimeField(null=True, blank=True)
+    comentario_decision = models.CharField(max_length=300, blank=True)
 
     def __str__(self):
         return self.codigo
@@ -143,3 +150,22 @@ class ApiToken(models.Model):
         token = secrets.token_urlsafe(32)
         obj = cls.objects.create(nombre=nombre, token_hash=cls.hash(token))
         return obj, token
+
+
+class ConfiguracionSeguridad(models.Model):
+    """Parámetros de bloqueo por intentos fallidos (RNF-01) administrables por el rol Administrador."""
+    max_intentos_login = models.PositiveSmallIntegerField(default=5)
+    minutos_bloqueo = models.PositiveSmallIntegerField(default=15)
+    actualizado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True)
+    actualizado_en = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if self.max_intentos_login is None or not (3 <= self.max_intentos_login <= 10):
+            raise ValidationError("El límite de intentos fallidos debe estar entre 3 y 10.")
+        if self.minutos_bloqueo is None or not (5 <= self.minutos_bloqueo <= 120):
+            raise ValidationError("El tiempo de bloqueo debe estar entre 5 y 120 minutos.")
+
+    @classmethod
+    def actual(cls):
+        obj, _ = cls.objects.get_or_create(pk=1, defaults={"max_intentos_login": 5, "minutos_bloqueo": 15})
+        return obj

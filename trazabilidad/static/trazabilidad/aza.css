@@ -5,6 +5,8 @@
 .estado-APROBADO{background:#e8f5e9;border:1px solid #2e7d32;color:#1b5e20}
 .estado-RECHAZADO{background:#fdecea;border:1px solid #c62828;color:#b71c1c}
 .estado-SIN_RECETA{background:#fff8e1;border:1px solid #f9a825;color:#7a5800}
+.estado-PENDIENTE{background:#f1f5f9;border:1px solid #64748b;color:#334155}
+.btn-outline-success{--bs-btn-color:#1b5e20;--bs-btn-border-color:#1b5e20}
 .kpi{font-size:2.2rem;font-weight:700;color:var(--aza)}
 .kpi-ok{font-size:2.2rem;font-weight:700;color:#1b5e20}
 .kpi-dark{font-size:2.2rem;font-weight:700;color:var(--aza-dark)}

@@ -12,7 +12,10 @@
   <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}">Dashboard</a></li>
   <li class="nav-item"><a class="nav-link" href="{% url 'historial' %}">Historial</a></li>
   <li class="nav-item"><a class="nav-link" href="{% url 'trazabilidad' %}">Trazabilidad</a></li>
-  {% if es_supervisor or es_admin %}<li class="nav-item"><a class="nav-link" href="{% url 'informe_gestion' %}">Informe de gestión</a></li>{% endif %}
+  {% if es_supervisor or es_admin %}
+  <li class="nav-item"><a class="nav-link" href="{% url 'rendimiento' %}">Rendimiento</a></li>
+  <li class="nav-item"><a class="nav-link" href="{% url 'informe_gestion' %}">Informe de gestión</a></li>{% endif %}
+  {% if es_supervisor %}<li class="nav-item"><a class="nav-link" href="{% url 'revision_lotes' %}">Revisión lotes</a></li>{% endif %}
   {% if es_operador or es_supervisor %}<li class="nav-item"><a class="nav-link" href="{% url 'alarmas' %}">Alarmas</a></li>{% endif %}
   {% if es_admin %}
   <li class="nav-item"><a class="nav-link" href="{% url 'usuarios' %}">Usuarios</a></li>

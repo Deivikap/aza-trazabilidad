@@ -105,8 +105,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 AUTHENTICATION_BACKENDS = ["axes.backends.AxesStandaloneBackend", "django.contrib.auth.backends.ModelBackend"]
-AXES_FAILURE_LIMIT = 5
-AXES_COOLOFF_TIME = 0.25  # horas = 15 minutos
+AXES_FAILURE_LIMIT = "trazabilidad.security.obtener_limite_intentos"
+AXES_COOLOFF_TIME = "trazabilidad.security.obtener_tiempo_bloqueo"
 AXES_LOCKOUT_TEMPLATE = "trazabilidad/bloqueado.html"
 AXES_RESET_ON_SUCCESS = True
 SESSION_COOKIE_HTTPONLY = True

@@ -6,10 +6,10 @@
 <div class="col-md-6"><div class="card"><div class="card-header">{% if editando_batch %}Editar batch: {{ editando_batch.codigo }}{% else %}Nuevo batch{% endif %}</div><div class="card-body"><form method="post">{% csrf_token %}{{ fb.as_p }}<div class="d-flex gap-2"><button name="guardar_batch" class="btn btn-aza btn-sm">{% if editando_batch %}Guardar cambios{% else %}Guardar batch{% endif %}</button>{% if editando_batch %}<a href="{% url 'lotes' %}" class="btn btn-outline-secondary btn-sm">Cancelar</a>{% endif %}</div></form></div></div></div>
 </div>
 <h2 class="h6 mb-2">Lotes registrados</h2>
-<div class="table-responsive mb-4"><table class="table bg-white align-middle"><thead><tr><th>Lote</th><th>Estado</th><th>Batches (receta)</th><th>Acciones</th></tr></thead><tbody>
-{% for l in lotes %}<tr><td><b>{{ l.codigo }}</b></td><td>{{ l.get_estado_display }}</td><td>{% for b in l.batches.all %}{{ b.codigo }} ({{ b.receta.codigo|default:"sin receta" }}){% if not forloop.last %}, {% endif %}{% empty %}<span class="text-muted">Sin batches</span>{% endfor %}</td>
+<div class="table-responsive mb-4"><table class="table bg-white align-middle"><thead><tr><th>Lote</th><th>Estado</th><th>Revisión Supervisor</th><th>Batches (receta)</th><th>Acciones</th></tr></thead><tbody>
+{% for l in lotes %}<tr><td><b>{{ l.codigo }}</b></td><td>{{ l.get_estado_display }}</td><td><span class="badge estado-{{ l.decision_supervisor }}">{{ l.get_decision_supervisor_display }}</span></td><td>{% for b in l.batches.all %}{{ b.codigo }} ({{ b.receta.codigo|default:"sin receta" }}){% if not forloop.last %}, {% endif %}{% empty %}<span class="text-muted">Sin batches</span>{% endfor %}</td>
 <td><div class="d-flex gap-1"><a href="{% url 'lote_editar' l.pk %}" class="btn btn-sm btn-outline-secondary">Editar</a><form method="post" action="{% url 'lote_eliminar' l.pk %}" data-confirm="¿Eliminar el lote {{ l.codigo }}?">{% csrf_token %}<button class="btn btn-sm btn-outline-danger">Eliminar</button></form></div></td></tr>
-{% empty %}<tr><td colspan="4" class="text-muted text-center">No hay lotes registrados.</td></tr>{% endfor %}</tbody></table></div>
+{% empty %}<tr><td colspan="5" class="text-muted text-center">No hay lotes registrados.</td></tr>{% endfor %}</tbody></table></div>
 <h2 class="h6 mb-2">Batches registrados</h2>
 <div class="table-responsive"><table class="table bg-white align-middle"><thead><tr><th>Batch</th><th>Lote</th><th>Receta</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>
 {% for b in batches %}<tr><td><b>{{ b.codigo }}</b></td><td>{{ b.lote.codigo }}</td><td>{{ b.receta.codigo|default:"— sin receta —" }}</td><td>{{ b.get_estado_display }}</td>

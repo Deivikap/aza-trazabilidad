@@ -1,6 +1,6 @@
 {% extends "trazabilidad/base.html" %}{% block content %}
 <h1 class="h4 mb-3">Trazabilidad Lote → Batch → Receta → Inspecciones</h1>
-{% for l in lotes %}<details class="mb-2 bg-white border rounded p-2"><summary><b>{{ l.codigo }}</b> <span class="text-muted small">· {{ l.batches.all|length }} batch(es) · {{ l.get_estado_display }}</span></summary>
+{% for l in lotes %}<details class="mb-2 bg-white border rounded p-2"><summary><b>{{ l.codigo }}</b> <span class="text-muted small">· {{ l.batches.all|length }} batch(es) · {{ l.get_estado_display }} · Revisión:</span> <span class="badge estado-{{ l.decision_supervisor }}">{{ l.get_decision_supervisor_display }}</span></summary>
  <div class="ms-4 mt-2">{% for b in l.batches.all %}<details class="mb-1"><summary>{{ b.codigo }} <span class="text-muted small">· receta: {{ b.receta.codigo|default:"— sin receta —" }} · {{ b.inspecciones.all|length }} inspecciones</span></summary>
   <ul class="small mt-1">{% for i in b.inspecciones.all|slice:":15" %}<li><a href="{% url 'detalle' i.pk %}">{{ i.id_externo }}</a> · {{ i.medicion_angular }}° · <span class="badge estado-{{ i.estado_original }}">{% if i.estado_original == 'APROBADO' %}[OK] {% elif i.estado_original == 'RECHAZADO' %}[!] {% endif %}{{ i.get_estado_original_display }}</span></li>{% endfor %}</ul></details>{% endfor %}</div></details>
 {% empty %}<p class="text-muted">No hay lotes registrados.</p>{% endfor %}{% endblock %}

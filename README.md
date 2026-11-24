@@ -53,6 +53,9 @@ Muestra 201, 409 (duplicado), 422 (incompleto) y 401 (token inválido).
 | CU13 Exportar CSV (neutraliza fórmulas) | | ● | | /historial/exportar/ |
 | CU14 Recuperar contraseña | ● | ● | ● | /password/recuperar/ |
 | Informe de gestión (filtros, gráficos, PDF) | ● | ● | | /informe-gestion/ |
+| Panel de rendimiento (diario/semanal/mensual) | ● | ● | | /rendimiento/ |
+| Revisión de lotes (aprobar / rechazar) | | ● | | /lotes/revision/ |
+| Política de bloqueo configurable (3–10 intentos) | ● | | | /administracion/seguridad/ |
 
 ## Pruebas
 ```bash

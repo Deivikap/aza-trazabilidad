@@ -2,7 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model, password_validation
 from django.contrib.auth.models import Group
 
-from .models import Batch, Lote, Receta
+from .models import Batch, ConfiguracionSeguridad, Lote, Receta
 from .roles import ROLES
 
 User = get_user_model()
@@ -95,3 +95,25 @@ class BatchForm(forms.ModelForm):
     class Meta:
         model = Batch
         fields = ["codigo", "lote", "receta", "estado"]
+
+
+class ConfiguracionSeguridadForm(forms.ModelForm):
+    class Meta:
+        model = ConfiguracionSeguridad
+        fields = ["max_intentos_login", "minutos_bloqueo"]
+        labels = {
+            "max_intentos_login": "Máx. intentos fallidos antes de bloquear (3–10)",
+            "minutos_bloqueo": "Duración del bloqueo en minutos (5–120)",
+        }
+        widgets = {
+            "max_intentos_login": forms.NumberInput(attrs={"class": "form-control", "min": 3, "max": 10}),
+            "minutos_bloqueo": forms.NumberInput(attrs={"class": "form-control", "min": 5, "max": 120}),
+        }
+
+
+class DecisionLoteForm(forms.Form):
+    decision = forms.ChoiceField(choices=[("APROBADO", "Aprobar lote"), ("RECHAZADO", "Rechazar lote")])
+    comentario = forms.CharField(max_length=300, required=False)
+
+    def clean_comentario(self):
+        return self.cleaned_data.get("comentario", "").strip()

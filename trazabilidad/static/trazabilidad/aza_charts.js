@@ -223,10 +223,48 @@
     });
   }
 
+  function drawEfectividad(canvas) {
+    var rows = readJson(canvas.dataset.source);
+    var c = setupCanvas(canvas, 210);
+    var ctx = c.ctx, w = c.w, h = c.h;
+    if (!rows || !rows.length) return drawEmpty(ctx, w, h, "Sin datos en el período seleccionado");
+
+    var left = 110, right = 88, barW = Math.max(w - left - right, 80);
+    var top = 26, rowH = 56;
+    rows.forEach(function (r, idx) {
+      var y = top + idx * rowH;
+      var pct = r.efectividad || 0;
+      var fillW = Math.round((pct / 100) * barW);
+      var color = pct >= 85 ? "#1b5e20" : (pct >= 65 ? "#b45309" : "#b71c1c");
+
+      ctx.fillStyle = "#212529";
+      ctx.font = "600 12px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      ctx.fillText(r.turno, left - 10, y + 14);
+
+      ctx.fillStyle = "#f1f5f9";
+      ctx.fillRect(left, y, barW, 28);
+      ctx.strokeStyle = "#cbd5e1";
+      ctx.strokeRect(left, y, barW, 28);
+
+      if (fillW > 0) {
+        ctx.fillStyle = color;
+        ctx.fillRect(left, y, Math.max(fillW, 4), 28);
+      }
+
+      ctx.fillStyle = "#212529";
+      ctx.font = "600 12px system-ui, -apple-system, sans-serif";
+      ctx.textAlign = "left";
+      ctx.fillText(pct + "% (" + r.aprobadas + "/" + r.total + ")", left + barW + 8, y + 14);
+    });
+  }
+
   function renderAll() {
     document.querySelectorAll("canvas[data-chart='estados']").forEach(drawEstados);
     document.querySelectorAll("canvas[data-chart='angulo']").forEach(drawAngulo);
     document.querySelectorAll("canvas[data-chart='turnos']").forEach(drawTurnos);
+    document.querySelectorAll("canvas[data-chart='efectividad']").forEach(drawEfectividad);
   }
 
   document.addEventListener("DOMContentLoaded", function () {

@@ -154,12 +154,12 @@
 <div class="card mb-4">
   <div class="table-responsive">
     <table class="table table-sm mb-0">
-      <thead><tr><th>Lote</th><th>Estado</th><th>Batches</th><th>Inspecciones</th><th>Aprobadas</th><th>Rechazadas</th><th>% Rechazo</th></tr></thead>
+      <thead><tr><th>Lote</th><th>Estado</th><th>Revisión Sup.</th><th>Batches</th><th>Inspecciones</th><th>Aprobadas</th><th>Rechazadas</th><th>% Rechazo</th></tr></thead>
       <tbody>
       {% for l in por_lote %}
-        <tr><td><b>{{ l.codigo }}</b></td><td>{{ l.estado }}</td><td>{{ l.batches }}</td><td>{{ l.total }}</td><td>{{ l.aprobadas }}</td><td>{{ l.rechazadas }}</td><td><b>{{ l.pct_rechazo }} %</b></td></tr>
+        <tr><td><b>{{ l.codigo }}</b></td><td>{{ l.estado }}</td><td><span class="badge estado-{{ l.decision }}">{{ l.decision }}</span></td><td>{{ l.batches }}</td><td>{{ l.total }}</td><td>{{ l.aprobadas }}</td><td>{{ l.rechazadas }}</td><td><b>{{ l.pct_rechazo }} %</b></td></tr>
       {% empty %}
-        <tr><td colspan="7" class="text-muted text-center">Sin lotes con inspecciones en el período.</td></tr>
+        <tr><td colspan="8" class="text-muted text-center">Sin lotes con inspecciones en el período.</td></tr>
       {% endfor %}
       </tbody>
     </table>

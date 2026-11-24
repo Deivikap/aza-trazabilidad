@@ -16,8 +16,11 @@ from django.views.decorators.http import require_POST
 
 from . import mongo
 from .audit import registrar
-from .forms import BatchForm, LoteForm, ObservacionForm, RecetaForm, UsuarioEditarForm, UsuarioForm
-from .models import Alarma, Batch, EventoAuditoria, Inspeccion, Lote, Observacion, Receta
+from .forms import (
+    BatchForm, ConfiguracionSeguridadForm, DecisionLoteForm, LoteForm,
+    ObservacionForm, RecetaForm, UsuarioEditarForm, UsuarioForm,
+)
+from .models import Alarma, Batch, ConfiguracionSeguridad, EventoAuditoria, Inspeccion, Lote, Observacion, Receta
 from django.conf import settings
 from .roles import ADMIN, OPERADOR, ROLES, SUPERVISOR, role_of, role_required
 
@@ -143,7 +146,7 @@ def informe_gestion(request):
     ]
 
     lotes_agg = (
-        qs.values("batch__lote__codigo", "batch__lote__estado")
+        qs.values("batch__lote__codigo", "batch__lote__estado", "batch__lote__decision_supervisor")
         .annotate(
             batches=Count("batch_id", distinct=True),
             total=Count("id"),
@@ -156,6 +159,7 @@ def informe_gestion(request):
         {
             "codigo": x["batch__lote__codigo"],
             "estado": x["batch__lote__estado"],
+            "decision": x["batch__lote__decision_supervisor"],
             "batches": x["batches"],
             "total": x["total"],
             "aprobadas": x["aprobadas"],
@@ -334,6 +338,181 @@ def reconocer(request, pk):
     return redirect("alarmas")
 
 
+@role_required(SUPERVISOR, ADMIN)
+def rendimiento(request):
+    """Panel de rendimiento operativo por turno y por operador/supervisor (diario, semanal, mensual)."""
+    periodos = {
+        "diario": ("Diario (últimas 24 h)", timedelta(days=1)),
+        "semanal": ("Semanal (últimos 7 días)", timedelta(days=7)),
+        "mensual": ("Mensual (últimos 30 días)", timedelta(days=30)),
+    }
+    periodo = request.GET.get("periodo", "semanal")
+    if periodo not in periodos:
+        periodo = "semanal"
+    etiqueta_periodo, delta = periodos[periodo]
+    ahora = timezone.now()
+    desde = ahora - delta
+
+    # Resumen comparativo de los 3 horizontes (diario, semanal, mensual)
+    resumen_horizontes = []
+    for clave, (etiq, dlt) in periodos.items():
+        q_h = Inspeccion.objects.filter(fecha_hora__gte=ahora - dlt)
+        tot_h = q_h.count()
+        apr_h = q_h.filter(estado_original="APROBADO").count()
+        rec_h = q_h.filter(estado_original="RECHAZADO").count()
+        resumen_horizontes.append({
+            "clave": clave,
+            "etiqueta": etiq,
+            "total": tot_h,
+            "aprobadas": apr_h,
+            "rechazadas": rec_h,
+            "efectividad": round(100 * apr_h / tot_h, 1) if tot_h else 0,
+        })
+
+    # Efectividad por turno en el período seleccionado
+    turnos_orden = ["T1 (06–14)", "T2 (14–22)", "T3 (22–06)"]
+    t_stats = {t: {"total": 0, "aprobadas": 0, "rechazadas": 0, "sin_receta": 0, "alarmas": 0, "alarmas_rec": 0}
+               for t in turnos_orden}
+    qs_insp = Inspeccion.objects.filter(fecha_hora__gte=desde)
+    for fh, est in qs_insp.values_list("fecha_hora", "estado_original").iterator(chunk_size=2000):
+        t = t_stats[turno_de(fh)]
+        t["total"] += 1
+        if est == "APROBADO":
+            t["aprobadas"] += 1
+        elif est == "RECHAZADO":
+            t["rechazadas"] += 1
+        else:
+            t["sin_receta"] += 1
+
+    qs_alarmas = Alarma.objects.filter(fecha_hora__gte=desde).select_related("usuario_rec")
+    for al in qs_alarmas:
+        t = t_stats[turno_de(al.fecha_hora)]
+        t["alarmas"] += 1
+        if al.estado == "RECONOCIDA":
+            t["alarmas_rec"] += 1
+
+    por_turno = []
+    for nombre in turnos_orden:
+        st = t_stats[nombre]
+        ef = round(100 * st["aprobadas"] / st["total"], 1) if st["total"] else 0
+        pr = round(100 * st["rechazadas"] / st["total"], 1) if st["total"] else 0
+        por_turno.append({
+            "turno": nombre,
+            **st,
+            "efectividad": ef,
+            "pct_rechazo": pr,
+        })
+
+    # Comparativa por Operador y Supervisor en sus turnos (gestiones reales en el período)
+    personal = []
+    usuarios_op_sup = [
+        (u, role_of(u)) for u in User.objects.filter(is_active=True).order_by("username")
+        if role_of(u) in (OPERADOR, SUPERVISOR)
+    ]
+    obs_periodo = list(Observacion.objects.filter(fecha_hora__gte=desde).select_related("usuario"))
+    alarmas_rec_periodo = list(
+        Alarma.objects.filter(estado="RECONOCIDA", fecha_rec__gte=desde, usuario_rec__isnull=False)
+        .select_related("usuario_rec")
+    )
+    lotes_dec_periodo = list(
+        Lote.objects.filter(fecha_decision__gte=desde, supervisor_decision__isnull=False)
+        .select_related("supervisor_decision")
+    )
+
+    for u, r_u in usuarios_op_sup:
+        obs_u = [o for o in obs_periodo if o.usuario_id == u.pk]
+        al_u = [a for a in alarmas_rec_periodo if a.usuario_rec_id == u.pk]
+        lot_u = [l for l in lotes_dec_periodo if l.supervisor_decision_id == u.pk]
+
+        conteo_turnos = defaultdict(int)
+        for o in obs_u:
+            conteo_turnos[turno_de(o.fecha_hora)] += 1
+        for a in al_u:
+            conteo_turnos[turno_de(a.fecha_rec)] += 1
+        for l in lot_u:
+            conteo_turnos[turno_de(l.fecha_decision)] += 1
+
+        tiempos_min = [
+            max(0.0, (a.fecha_rec - a.fecha_hora).total_seconds() / 60.0)
+            for a in al_u if a.fecha_rec and a.fecha_hora
+        ]
+        tiempo_prom = round(sum(tiempos_min) / len(tiempos_min), 1) if tiempos_min else None
+        turno_principal = max(conteo_turnos.items(), key=lambda kv: kv[1])[0] if conteo_turnos else "Sin gestiones"
+        ef_turno = next((x["efectividad"] for x in por_turno if x["turno"] == turno_principal), None)
+        acciones_tot = len(obs_u) + len(al_u) + len(lot_u)
+        personal.append({
+            "usuario": u.username,
+            "nombre": u.get_full_name() or u.username,
+            "rol": r_u,
+            "turno_principal": turno_principal,
+            "observaciones": len(obs_u),
+            "alarmas_rec": len(al_u),
+            "lotes_decididos": len(lot_u),
+            "acciones_total": acciones_tot,
+            "tiempo_prom_min": tiempo_prom,
+            "efectividad_turno": ef_turno,
+        })
+    personal.sort(key=lambda x: (-x["acciones_total"], x["rol"], x["usuario"]))
+
+    chart_efectividad = [
+        {"turno": x["turno"], "efectividad": x["efectividad"], "aprobadas": x["aprobadas"], "total": x["total"]}
+        for x in por_turno
+    ]
+    return render(request, "trazabilidad/rendimiento.html", dict(
+        periodo=periodo,
+        etiqueta_periodo=etiqueta_periodo,
+        resumen_horizontes=resumen_horizontes,
+        por_turno=por_turno,
+        personal=personal,
+        chart_efectividad=chart_efectividad,
+    ))
+
+
+@role_required(SUPERVISOR)
+def revision_lotes(request):
+    """Vista exclusiva del Supervisor para revisar indicadores por lote y aprobar o rechazar lotes."""
+    lotes_qs = Lote.objects.select_related("supervisor_decision").prefetch_related("batches__receta").order_by("-fecha_registro")
+    filas = []
+    for l in lotes_qs:
+        insps = Inspeccion.objects.filter(batch__lote=l)
+        tot = insps.count()
+        apr = insps.filter(estado_original="APROBADO").count()
+        rec = insps.filter(estado_original="RECHAZADO").count()
+        sin = insps.filter(estado_original="SIN_RECETA").count()
+        filas.append({
+            "lote": l,
+            "batches": l.batches.count(),
+            "total": tot,
+            "aprobadas": apr,
+            "rechazadas": rec,
+            "sin_receta": sin,
+            "pct_rechazo": round(100 * rec / tot, 1) if tot else 0,
+            "efectividad": round(100 * apr / tot, 1) if tot else 0,
+        })
+    return render(request, "trazabilidad/revision_lotes.html", dict(filas=filas))
+
+
+@role_required(SUPERVISOR)
+@require_POST
+def lote_decidir(request, pk):
+    """El Supervisor aprueba o rechaza formalmente un lote (sin alterar clasificaciones individuales de cámara)."""
+    lote = get_object_or_404(Lote, pk=pk)
+    form = DecisionLoteForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Decisión inválida sobre el lote.")
+        return redirect("revision_lotes")
+    dec = form.cleaned_data["decision"]
+    lote.decision_supervisor = dec
+    lote.supervisor_decision = request.user
+    lote.fecha_decision = timezone.now()
+    lote.comentario_decision = form.cleaned_data["comentario"]
+    lote.save(update_fields=["decision_supervisor", "supervisor_decision", "fecha_decision", "comentario_decision"])
+    accion = "LOTE_APROBADO" if dec == "APROBADO" else "LOTE_RECHAZADO"
+    registrar(request, accion, "EXITO", "Lote", lote.codigo)
+    messages.success(request, f"Lote {lote.codigo} marcado como {lote.get_decision_supervisor_display()}.")
+    return redirect("revision_lotes")
+
+
 # ---------------- Administración ----------------
 @role_required(ADMIN)
 def usuarios(request):  # CU02
@@ -344,7 +523,10 @@ def usuarios(request):  # CU02
         messages.success(request, "Usuario creado.")
         return redirect("usuarios")
     lista = [(u, role_of(u)) for u in User.objects.order_by("username")]
-    return render(request, "trazabilidad/usuarios.html", dict(lista=lista, form=form, editando=None))
+    cfg = ConfiguracionSeguridad.actual()
+    return render(request, "trazabilidad/usuarios.html", dict(
+        lista=lista, form=form, editando=None,
+        cfg_form=ConfiguracionSeguridadForm(instance=cfg), cfg_seg=cfg))
 
 
 @role_required(ADMIN)
@@ -361,7 +543,36 @@ def usuario_editar(request, pk):  # CU02 (Actualizar)
             messages.success(request, f"Usuario {u.username} actualizado.")
             return redirect("usuarios")
     lista = [(usr, role_of(usr)) for usr in User.objects.order_by("username")]
-    return render(request, "trazabilidad/usuarios.html", dict(lista=lista, form=form, editando=u))
+    cfg = ConfiguracionSeguridad.actual()
+    return render(request, "trazabilidad/usuarios.html", dict(
+        lista=lista, form=form, editando=u,
+        cfg_form=ConfiguracionSeguridadForm(instance=cfg), cfg_seg=cfg))
+
+
+@role_required(ADMIN)
+@require_POST
+def config_seguridad(request):
+    """Permite al Administrador ajustar el límite de intentos fallidos (3–10) y minutos de bloqueo (5–120)."""
+    cfg = ConfiguracionSeguridad.actual()
+    form = ConfiguracionSeguridadForm(request.POST, instance=cfg)
+    if form.is_valid():
+        obj = form.save(commit=False)
+        obj.actualizado_por = request.user
+        obj.save()
+        registrar(
+            request, "CONFIG_SEGURIDAD_ACTUALIZADA", "EXITO", "ConfiguracionSeguridad",
+            f"intentos={obj.max_intentos_login},bloqueo={obj.minutos_bloqueo}m",
+        )
+        messages.success(
+            request,
+            f"Política de bloqueo actualizada: {obj.max_intentos_login} intentos fallidos / {obj.minutos_bloqueo} minutos.",
+        )
+    else:
+        for errs in form.errors.values():
+            for e in errs:
+                messages.error(request, e)
+        registrar(request, "CONFIG_SEGURIDAD_ACTUALIZADA", "FALLO", "ConfiguracionSeguridad", "valores_invalidos")
+    return redirect("usuarios")
 
 
 @role_required(ADMIN)

@@ -9,5 +9,5 @@
 <input type="hidden" name="next" value="{{ next }}">
 <button class="btn btn-aza w-100">Ingresar</button></form>
 <p class="small mt-3 mb-1"><a href="{% url 'password_reset' %}">¿Olvidaste tu contraseña?</a></p>
-<p class="small text-muted mb-0">Tras 5 intentos fallidos la cuenta se bloquea 15 minutos.</p>
+<p class="small text-muted mb-0">Tras {{ max_intentos_login }} intentos fallidos la cuenta se bloquea {{ minutos_bloqueo }} minutos.</p>
 </div></div></div></div>{% endblock %}

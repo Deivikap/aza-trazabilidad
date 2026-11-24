@@ -1,0 +1,102 @@
+{% extends "trazabilidad/base.html" %}
+{% block title %}Rendimiento por turno · Trazabilidad AZA{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+  <div>
+    <h1 class="h4 mb-0">Panel de rendimiento operativo</h1>
+    <div class="small text-muted">Comparación de efectividad por turno y actividad de operadores y supervisores · <b>{{ etiqueta_periodo }}</b></div>
+  </div>
+  <div class="btn-group" role="group" aria-label="Seleccionar período">
+    <a href="?periodo=diario" class="btn btn-sm {% if periodo == 'diario' %}btn-aza{% else %}btn-outline-secondary{% endif %}">Diario (24 h)</a>
+    <a href="?periodo=semanal" class="btn btn-sm {% if periodo == 'semanal' %}btn-aza{% else %}btn-outline-secondary{% endif %}">Semanal (7 días)</a>
+    <a href="?periodo=mensual" class="btn btn-sm {% if periodo == 'mensual' %}btn-aza{% else %}btn-outline-secondary{% endif %}">Mensual (30 días)</a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  {% for h in resumen_horizontes %}
+  <div class="col-md-4">
+    <div class="card h-100 {% if h.clave == periodo %}border-danger{% endif %}">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="small text-muted">{{ h.etiqueta }}</div>
+          {% if h.clave == periodo %}<span class="badge estado-APROBADO">Activo</span>{% endif %}
+        </div>
+        <div class="kpi-dark">{{ h.efectividad }} %</div>
+        <div class="small text-muted">{{ h.aprobadas }} aprobadas · {{ h.rechazadas }} rechazadas · {{ h.total }} total</div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Efectividad por turno (% aprobación · {{ etiqueta_periodo }})</div>
+      <div class="card-body">
+        <canvas class="chart-canvas" data-chart="efectividad" data-source="rend-chart-ef" role="img" aria-label="Comparativa de efectividad porcentual por turno"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Detalle comparativo por turno</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0 align-middle">
+          <thead><tr><th>Turno</th><th>Total</th><th>Aprob.</th><th>Rech.</th><th>Efectividad</th><th>Alarmas (rec.)</th></tr></thead>
+          <tbody>
+          {% for t in por_turno %}
+            <tr>
+              <td><b>{{ t.turno }}</b></td>
+              <td>{{ t.total }}</td>
+              <td>{{ t.aprobadas }}</td>
+              <td>{{ t.rechazadas }}</td>
+              <td><span class="badge {% if t.efectividad >= 85 %}estado-APROBADO{% elif t.efectividad >= 65 %}estado-SIN_RECETA{% else %}estado-RECHAZADO{% endif %}">{{ t.efectividad }} %</span></td>
+              <td>{{ t.alarmas }} ({{ t.alarmas_rec }})</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{{ chart_efectividad|json_script:"rend-chart-ef" }}
+
+<h2 class="h6 text-uppercase text-muted mb-2">Comparativa de operadores y supervisores en sus turnos ({{ etiqueta_periodo }})</h2>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0 align-middle">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Turno principal</th>
+          <th>Observaciones</th>
+          <th>Alarmas reconocidas</th>
+          <th>T. medio respuesta</th>
+          <th>Lotes evaluados</th>
+          <th>Efectividad turno</th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for p in personal %}
+        <tr>
+          <td><b>{{ p.nombre }}</b><div class="small text-muted">{{ p.usuario }}</div></td>
+          <td>{{ p.rol }}</td>
+          <td>{{ p.turno_principal }}</td>
+          <td>{{ p.observaciones }}</td>
+          <td>{{ p.alarmas_rec }}</td>
+          <td>{% if p.tiempo_prom_min is not None %}{{ p.tiempo_prom_min }} min{% else %}—{% endif %}</td>
+          <td>{{ p.lotes_decididos }}</td>
+          <td>{% if p.efectividad_turno is not None %}<span class="badge estado-APROBADO">{{ p.efectividad_turno }} %</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8" class="text-center text-muted">No hay operadores o supervisores activos.</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
